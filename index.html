@@ -245,6 +245,28 @@ select.sel{padding:7px 10px;border:1px solid #d1d5db;border-radius:8px;font-size
   .main{margin-left:0;}
 }
 
+/* ── Project Select Screen ── */
+.proj-select-screen{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;background:linear-gradient(135deg,#1a3a5c 0%,#0f2540 100%);}
+.proj-select-header{text-align:center;margin-bottom:28px;}
+.proj-select-header .logo-icon{width:56px;height:56px;background:linear-gradient(135deg,#3b82f6,#60a5fa);border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:26px;margin:0 auto 12px;}
+.proj-select-header h1{color:#fff;font-size:20px;font-weight:800;}
+.proj-select-header p{color:rgba(255,255,255,.55);font-size:13px;margin-top:4px;}
+.proj-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;width:100%;max-width:480px;}
+.proj-card{background:rgba(255,255,255,.08);border:1.5px solid rgba(255,255,255,.12);border-radius:14px;padding:18px 16px;cursor:pointer;transition:all .2s;text-align:left;}
+.proj-card:hover{background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.3);transform:translateY(-2px);}
+.proj-card.all-proj{background:rgba(59,130,246,.15);border-color:rgba(59,130,246,.4);grid-column:1/-1;}
+.proj-card.all-proj:hover{background:rgba(59,130,246,.25);}
+.proj-card-dot{width:10px;height:10px;border-radius:50%;margin-bottom:10px;}
+.proj-card-name{color:#fff;font-size:14px;font-weight:700;margin-bottom:3px;}
+.proj-card-loc{color:rgba(255,255,255,.5);font-size:11px;}
+.proj-card-count{color:rgba(255,255,255,.4);font-size:10px;margin-top:6px;}
+.proj-manage-btn{margin-top:20px;background:none;border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.5);padding:8px 18px;border-radius:8px;cursor:pointer;font-size:12px;font-family:'Sarabun',sans-serif;}
+.proj-manage-btn:hover{border-color:rgba(255,255,255,.4);color:rgba(255,255,255,.8);}
+/* ── Project badge in topbar ── */
+.proj-badge{display:flex;align-items:center;gap:5px;padding:4px 10px;border-radius:8px;background:#f0f4f8;font-size:11px;font-weight:700;cursor:pointer;border:none;color:#374151;white-space:nowrap;}
+.proj-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+@media(max-width:400px){.proj-grid{grid-template-columns:1fr;}.proj-card.all-proj{grid-column:auto;}}
+
 /* ── Login Screen ── */
 .login-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;background:linear-gradient(135deg,#1a3a5c 0%,#0f2540 100%);}
 .login-card{background:#fff;border-radius:20px;padding:36px 32px;width:100%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,0.35);}
@@ -416,6 +438,132 @@ function SetupScreen({onConnect}) {
       </div>
     </div>
   );
+}
+
+/* ── Seed Projects ── */
+const SEED_PROJECTS = [
+  {id:'PRJ001',name:'โครงการอีราวัณ',location:'สมุทรปราการ',color:'#3b82f6',status:'active'},
+  {id:'PRJ002',name:'โครงการแม่ปิง',location:'เชียงใหม่',color:'#10b981',status:'active'},
+  {id:'PRJ003',name:'โครงการกลาง (คลังหลัก)',location:'กรุงเทพฯ',color:'#f59e0b',status:'active'},
+];
+
+/* ── Project Select Screen ── */
+function ProjectSelectScreen({projects, isAdmin, userName, onSelect, onManage}) {
+  const active = projects.filter(p=>p.status!=='inactive');
+  return (
+    <div className="proj-select-screen">
+      <div className="proj-select-header">
+        <div className="logo-icon">🏗️</div>
+        <h1>บจก.แม่ปิง 11</h1>
+        <p>สวัสดี {userName} — เลือกโปรเจ็คที่ต้องการ</p>
+      </div>
+      <div className="proj-grid">
+        {isAdmin && (
+          <div className="proj-card all-proj" onClick={()=>onSelect(null)}>
+            <div style={{fontSize:22,marginBottom:8}}>📊</div>
+            <div className="proj-card-name">ดูทั้งหมด</div>
+            <div className="proj-card-loc">รวมทุกโปรเจ็ค — เฉพาะ Admin</div>
+            <div className="proj-card-count">{active.length} โปรเจ็คที่ใช้งาน</div>
+          </div>
+        )}
+        {active.map(p=>(
+          <div className="proj-card" key={p.id} onClick={()=>onSelect(p)}>
+            <div className="proj-card-dot" style={{background:p.color}}/>
+            <div className="proj-card-name">{p.name}</div>
+            <div className="proj-card-loc">📍 {p.location}</div>
+          </div>
+        ))}
+        {active.length===0&&<div style={{color:'rgba(255,255,255,.5)',textAlign:'center',gridColumn:'1/-1',padding:24}}>ยังไม่มีโปรเจ็ค — ให้ Admin เพิ่มก่อน</div>}
+      </div>
+      {isAdmin&&<button className="proj-manage-btn" onClick={onManage}>⚙️ จัดการโปรเจ็ค</button>}
+    </div>
+  );
+}
+
+/* ── Projects Management Page ── */
+function ProjectsPage() {
+  const [projects, setProjects] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showAdd, setShowAdd] = useState(false);
+  const [editP, setEditP] = useState(null);
+  const [form, setForm] = useState({name:'',location:'',color:'#3b82f6',status:'active'});
+  const [saving, setSaving] = useState(false);
+  const set = (k,v) => setForm(f=>({...f,[k]:v}));
+  const COLORS = ['#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#ec4899','#f97316'];
+
+  useEffect(()=>{
+    const unsub = db.collection('projects').orderBy('createdAt','asc').onSnapshot(snap=>{
+      setProjects(snap.docs.map(d=>({id:d.id,...d.data()})));
+      setLoading(false);
+    },()=>setLoading(false));
+    return unsub;
+  },[]);
+
+  const openAdd = () => { setForm({name:'',location:'',color:'#3b82f6',status:'active'}); setEditP(null); setShowAdd(true); };
+  const openEdit = p => { setForm({name:p.name,location:p.location||'',color:p.color||'#3b82f6',status:p.status||'active'}); setEditP(p); setShowAdd(true); };
+
+  const handleSave = async () => {
+    if(!form.name.trim()){alert('กรุณากรอกชื่อโปรเจ็ค');return;}
+    setSaving(true);
+    if(editP) {
+      await db.collection('projects').doc(editP.id).update({...form});
+    } else {
+      const id = 'PRJ'+Date.now();
+      await db.collection('projects').doc(id).set({id,...form,createdAt:firebase.firestore.FieldValue.serverTimestamp()});
+    }
+    setSaving(false); setShowAdd(false);
+  };
+
+  const handleDelete = async p => {
+    if(!window.confirm(`ลบโปรเจ็ค "${p.name}"?\nประวัติ transaction ยังคงอยู่`))return;
+    await db.collection('projects').doc(p.id).delete();
+  };
+
+  const toggleStatus = async p => {
+    await db.collection('projects').doc(p.id).update({status: p.status==='active'?'inactive':'active'});
+  };
+
+  return <div className="page">
+    <div style={{display:'flex',justifyContent:'flex-end',marginBottom:16}}>
+      <button className="btn btn-primary" onClick={openAdd}>➕ เพิ่มโปรเจ็ค</button>
+    </div>
+    {showAdd&&<div className="card" style={{marginBottom:16}}>
+      <div className="card-header"><h3>{editP?'✏️ แก้ไขโปรเจ็ค':'➕ เพิ่มโปรเจ็คใหม่'}</h3></div>
+      <div className="modal-body">
+        <div className="form-row">
+          <div className="form-group"><label className="form-label">ชื่อโปรเจ็ค <span>*</span></label><input className="form-control" value={form.name} onChange={e=>set('name',e.target.value)} placeholder="โครงการ..."/></div>
+          <div className="form-group"><label className="form-label">สถานที่</label><input className="form-control" value={form.location} onChange={e=>set('location',e.target.value)} placeholder="กรุงเทพฯ / ต่างจังหวัด..."/></div>
+        </div>
+        <div className="form-group">
+          <label className="form-label">สีโปรเจ็ค</label>
+          <div style={{display:'flex',gap:8,marginTop:4}}>
+            {COLORS.map(c=><div key={c} onClick={()=>set('color',c)} style={{width:26,height:26,borderRadius:50,background:c,cursor:'pointer',border:form.color===c?'3px solid #1a202c':'3px solid transparent'}}/>)}
+          </div>
+        </div>
+        <div style={{display:'flex',gap:8,justifyContent:'flex-end'}}>
+          <button className="btn btn-outline" onClick={()=>setShowAdd(false)}>ยกเลิก</button>
+          <button className="btn btn-primary" disabled={saving} onClick={handleSave}>{saving?'⏳ บันทึก...':'💾 บันทึก'}</button>
+        </div>
+      </div>
+    </div>}
+    <div className="card">
+      <div className="card-header"><h3>🏗️ โปรเจ็คทั้งหมด ({projects.length})</h3></div>
+      {loading?<div className="empty-state"><div className="spinner" style={{margin:'0 auto'}}/></div>
+      :projects.length===0?<div className="empty-state"><div className="ei">🏗️</div><p>ยังไม่มีโปรเจ็ค</p></div>
+      :projects.map(p=><div key={p.id} style={{display:'flex',alignItems:'center',gap:12,padding:'12px 18px',borderBottom:'1px solid #f0f4f8'}}>
+        <div style={{width:14,height:14,borderRadius:'50%',background:p.color,flexShrink:0}}/>
+        <div style={{flex:1}}>
+          <div style={{fontWeight:700,fontSize:13}}>{p.name}</div>
+          <div style={{fontSize:11,color:'#718096'}}>📍 {p.location||'—'}</div>
+        </div>
+        <span className={`badge ${p.status==='active'?'badge-success':'badge-gray'}`} style={{cursor:'pointer'}} onClick={()=>toggleStatus(p)}>
+          {p.status==='active'?'✅ ใช้งาน':'⏸️ หยุด'}
+        </span>
+        <button className="btn btn-outline btn-sm" onClick={()=>openEdit(p)}>✏️</button>
+        <button className="btn btn-danger btn-sm" onClick={()=>handleDelete(p)}>🗑️</button>
+      </div>)}
+    </div>
+  </div>;
 }
 
 /* ── Login Screen ── */
@@ -1002,35 +1150,33 @@ function ReportsPage({products, transactions}) {
    MAIN APP — Firebase Auth + Firestore
 ══════════════════════════════════════════ */
 function App() {
-  const [screen, setScreen] = useState('auth_check'); // เริ่มตรวจ auth เลย
+  const [screen, setScreen] = useState('auth_check');
   const [page, setPage] = useState('dashboard');
   const [sideOpen, setSideOpen] = useState(false);
   const [products, setProducts] = useState([]);
   const [transactions, setTransactions] = useState([]);
+  const [projects, setProjects] = useState([]);
+  const [selectedProject, setSelectedProject] = useState(null); // null = ทั้งหมด
   const [synced, setSynced] = useState(false);
-  const [currentUser, setCurrentUser] = useState(null);  // Firebase Auth user
-  const [userRole, setUserRole] = useState(null);         // 'admin' | 'employee'
+  const [currentUser, setCurrentUser] = useState(null);
+  const [userRole, setUserRole] = useState(null);
   const [showLogoutMenu, setShowLogoutMenu] = useState(false);
 
-  // ── Watch Firebase Auth state ──
+  // ── Auth state ──
   useEffect(() => {
     const unsub = auth.onAuthStateChanged(async firebaseUser => {
       if (firebaseUser) {
-        // Load role from Firestore
         try {
           const doc = await db.collection('users').doc(firebaseUser.uid).get();
           if (doc.exists) {
             setUserRole(doc.data().role || 'employee');
           } else {
-            // First ever user → auto-create as admin
             const allUsers = await db.collection('users').limit(1).get();
             const role = allUsers.empty ? 'admin' : 'employee';
             await db.collection('users').doc(firebaseUser.uid).set({
-              uid: firebaseUser.uid,
-              email: firebaseUser.email,
+              uid: firebaseUser.uid, email: firebaseUser.email,
               displayName: firebaseUser.displayName || firebaseUser.email.split('@')[0],
-              role,
-              createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+              role, createdAt: firebase.firestore.FieldValue.serverTimestamp(),
             });
             setUserRole(role);
           }
@@ -1038,59 +1184,50 @@ function App() {
         setCurrentUser(firebaseUser);
         setScreen('loading');
       } else {
-        setCurrentUser(null);
-        setUserRole(null);
-        if (screen !== 'setup') setScreen('login');
+        setCurrentUser(null); setUserRole(null); setScreen('login');
       }
     });
     return unsub;
   }, []);
 
-  // ── Firestore real-time listeners ──
+  // ── Firestore listeners (products + transactions + projects) ──
   useEffect(() => {
     if (screen !== 'app') return;
     const unsubP = db.collection('products').onSnapshot(snap => {
-      const data = snap.docs.map(d => ({id: d.id, ...d.data()}));
-      setProducts(data.sort((a,b)=>a.sku?.localeCompare(b.sku)));
+      setProducts(snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>a.sku?.localeCompare(b.sku)));
       setSynced(true);
-    }, err => console.error('products:', err));
-
-    const unsubT = db.collection('transactions')
-      .orderBy('createdAt', 'desc').limit(300)
-      .onSnapshot(snap => {
-        setTransactions(snap.docs.map(d => ({id: d.id, ...d.data()})));
-      }, err => console.error('transactions:', err));
-
-    return () => { unsubP(); unsubT(); };
+    });
+    const unsubT = db.collection('transactions').orderBy('createdAt','desc').limit(500)
+      .onSnapshot(snap => setTransactions(snap.docs.map(d=>({id:d.id,...d.data()}))));
+    const unsubPrj = db.collection('projects').orderBy('createdAt','asc')
+      .onSnapshot(snap => setProjects(snap.docs.map(d=>({id:d.id,...d.data()}))));
+    return () => { unsubP(); unsubT(); unsubPrj(); };
   }, [screen]);
 
-  // ── Seed products on first load ──
+  // ── Seed data on first load ──
   const seedIfEmpty = useCallback(async () => {
-    const snap = await db.collection('products').limit(1).get();
-    if (snap.empty) {
-      const batch = db.batch();
-      SEED_PRODUCTS.forEach(p => { batch.set(db.collection('products').doc(p.id), p); });
-      await batch.commit();
-    }
-    setScreen('app');
+    const [pSnap, prjSnap] = await Promise.all([
+      db.collection('products').limit(1).get(),
+      db.collection('projects').limit(1).get(),
+    ]);
+    const batch = db.batch();
+    if (pSnap.empty) SEED_PRODUCTS.forEach(p => batch.set(db.collection('products').doc(p.id), p));
+    if (prjSnap.empty) SEED_PROJECTS.forEach(p => batch.set(db.collection('projects').doc(p.id), {...p, createdAt: firebase.firestore.FieldValue.serverTimestamp()}));
+    await batch.commit();
+    setScreen('project_select');
   }, []);
 
-  useEffect(() => {
-    if (screen === 'loading') seedIfEmpty();
-  }, [screen, seedIfEmpty]);
+  useEffect(() => { if (screen === 'loading') seedIfEmpty(); }, [screen, seedIfEmpty]);
 
   // ── CRUD ──
   const isAdmin = userRole === 'admin';
-  const addProduct = async (data) => {
+  const addProduct = async data => {
     if (!isAdmin) return alert('เฉพาะ Admin เท่านั้น');
-    const id = data.sku || 'P' + Date.now();
+    const id = data.sku || 'P'+Date.now();
     await db.collection('products').doc(id).set({...data, id, createdAt: firebase.firestore.FieldValue.serverTimestamp()});
   };
-  const editProduct = async (data) => {
-    // ทุกคนแก้ไขสต็อกได้
-    await db.collection('products').doc(data.id).update(data);
-  };
-  const deleteProduct = async (id) => {
+  const editProduct = async data => { await db.collection('products').doc(data.id).update(data); };
+  const deleteProduct = async id => {
     if (!isAdmin) return alert('เฉพาะ Admin เท่านั้น');
     await db.collection('products').doc(id).delete();
   };
@@ -1099,60 +1236,72 @@ function App() {
     if (!prod) return;
     const batch = db.batch();
     const txRef = db.collection('transactions').doc();
-    const byName = data.by || currentUser?.displayName || currentUser?.email || '';
     batch.set(txRef, {
       type, productId: data.productId, productName: prod.name,
-      qty: data.qty, ref: data.ref || '', note: data.note || '',
-      date: data.date || todayStr(), by: byName,
-      uid: currentUser?.uid || '',
+      qty: data.qty, ref: data.ref||'', note: data.note||'',
+      date: data.date||todayStr(),
+      by: data.by || currentUser?.displayName || currentUser?.email || '',
+      uid: currentUser?.uid||'',
+      projectId: selectedProject?.id||'', projectName: selectedProject?.name||'ทั้งหมด',
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
     });
-    const newQty = type === 'in' ? prod.qty + data.qty : prod.qty - data.qty;
+    const newQty = type==='in' ? prod.qty+data.qty : prod.qty-data.qty;
     batch.update(db.collection('products').doc(prod.id), {qty: newQty});
     await batch.commit();
   };
 
-  const handleLogout = async () => {
-    setShowLogoutMenu(false);
-    await auth.signOut();
-    setScreen('login');
-  };
-
+  const handleLogout = async () => { setShowLogoutMenu(false); await auth.signOut(); };
   const handleResetConfig = () => {
     setShowLogoutMenu(false);
-    if(window.confirm('ออกจากระบบและ reload?')) {
-      auth.signOut().then(() => window.location.reload());
-    }
+    if(window.confirm('ออกจากระบบ?')) auth.signOut().then(()=>window.location.reload());
   };
+  const handleSelectProject = prj => { setSelectedProject(prj); setScreen('app'); setPage('dashboard'); };
+  const handleChangeProject = () => { setScreen('project_select'); setSideOpen(false); };
+
+  // ── Filter transactions by project ──
+  const displayedTx = selectedProject
+    ? transactions.filter(t => t.projectId === selectedProject.id)
+    : transactions;
 
   const lowN = products.filter(p=>p.minQty>0&&p.qty<=p.minQty).length;
   const nav = id => { setPage(id); setSideOpen(false); };
-
   const PAGES = [
     {id:'dashboard',label:'แดชบอร์ด',icon:'📊',sec:'หลัก',adminOnly:false},
     {id:'products',label:'สินค้า',icon:'📦',sec:'จัดการ',adminOnly:false},
     {id:'transactions',label:'รับ/ส่งของ',icon:'🔄',sec:'จัดการ',adminOnly:false},
     {id:'reports',label:'รายงาน',icon:'📈',sec:'รายงาน',adminOnly:false},
+    {id:'projects',label:'โปรเจ็ค',icon:'🏗️',sec:'แอดมิน',adminOnly:true},
     {id:'users',label:'พนักงาน',icon:'👥',sec:'แอดมิน',adminOnly:true},
   ];
   const visiblePages = PAGES.filter(p => !p.adminOnly || isAdmin);
-  const titles = {dashboard:'แดชบอร์ด',products:'จัดการสินค้า',transactions:'รับ/ส่งของ',reports:'รายงานสต็อก',users:'จัดการพนักงาน'};
+  const titles = {dashboard:'แดชบอร์ด',products:'จัดการสินค้า',transactions:'รับ/ส่งของ',reports:'รายงานสต็อก',projects:'จัดการโปรเจ็ค',users:'จัดการพนักงาน'};
   const now = new Date().toLocaleDateString('th-TH',{day:'2-digit',month:'short',year:'numeric'});
   const userName = currentUser?.displayName || currentUser?.email?.split('@')[0] || '';
   const initials = s => s?s.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2):'?';
+  const projColor = selectedProject?.color || '#718096';
 
   // ── Screens ──
-  if (screen === 'auth_check' || screen === 'login') return <LoginScreen onLogin={()=>{}} />;
-  if (screen === 'loading') return <div className="loading-screen">
-    <div className="spinner"/>
-    <div className="loading-text">🔥 กำลังโหลดข้อมูล...</div>
-  </div>;
+  if (screen==='auth_check'||screen==='login') return <LoginScreen onLogin={()=>{}}/>;
+  if (screen==='loading') return <div className="loading-screen"><div className="spinner"/><div className="loading-text">🔥 กำลังโหลดข้อมูล...</div></div>;
+  if (screen==='project_select') return <ProjectSelectScreen projects={projects} isAdmin={isAdmin} userName={userName}
+    onSelect={handleSelectProject} onManage={()=>{setScreen('app');setPage('projects');}}/>;
 
   // ── Main App ──
   return <>
     <div className={`sidebar-overlay ${sideOpen?'show':''}`} onClick={()=>setSideOpen(false)}/>
     <div className={`sidebar ${sideOpen?'open':''}`}>
       <div className="sidebar-logo"><div className="logo-icon">🏗️</div><h1>บจก.แม่ปิง 11</h1><p>ระบบอินเวนทอรี</p></div>
+      {/* Project indicator */}
+      <div style={{margin:'0 10px 6px',padding:'8px 10px',background:'rgba(255,255,255,.07)',borderRadius:8,cursor:'pointer'}} onClick={handleChangeProject}>
+        <div style={{fontSize:9,color:'rgba(255,255,255,.35)',letterSpacing:1,marginBottom:4}}>โปรเจ็คปัจจุบัน</div>
+        <div style={{display:'flex',alignItems:'center',gap:6}}>
+          <div style={{width:8,height:8,borderRadius:'50%',background:projColor,flexShrink:0}}/>
+          <span style={{color:'#fff',fontSize:12,fontWeight:700,flex:1,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
+            {selectedProject?.name||'ทั้งหมด'}
+          </span>
+          <span style={{color:'rgba(255,255,255,.4)',fontSize:10}}>เปลี่ยน</span>
+        </div>
+      </div>
       {[...new Set(visiblePages.map(p=>p.sec))].map(sec=><div className="nav-section" key={sec}>
         <div className="nav-label">{sec}</div>
         {visiblePages.filter(p=>p.sec===sec).map(p=><div key={p.id} className={`nav-item ${page===p.id?'active':''}`} onClick={()=>nav(p.id)}>
@@ -1161,11 +1310,8 @@ function App() {
         </div>)}
       </div>)}
       <div className="sidebar-footer">
-        <span className="sync-dot"/>
-        {synced?'ซิงค์ real-time · ':'กำลังโหลด · '}{products.length} รายการ
-        <br/>
-        <span style={{color:'rgba(255,255,255,.5)',fontSize:10}}>{userName} · {isAdmin?'Admin':'พนักงาน'}</span>
-        <br/>
+        <span className="sync-dot"/>{synced?'ซิงค์ real-time · ':'กำลังโหลด · '}{products.length} รายการ<br/>
+        <span style={{color:'rgba(255,255,255,.5)',fontSize:10}}>{userName} · {isAdmin?'Admin':'พนักงาน'}</span><br/>
         <button style={{background:'none',border:'none',color:'rgba(255,255,255,.4)',fontSize:10,cursor:'pointer',marginTop:4}} onClick={handleLogout}>🚪 ออกจากระบบ</button>
       </div>
     </div>
@@ -1177,27 +1323,40 @@ function App() {
         </div>
         <div className="topbar-right">
           {lowN>0&&<span className="badge badge-danger">🔔 {lowN}</span>}
-          <span className="topbar-date mobile-hide">📅 {now}</span>
+          {/* Project switcher pill */}
+          <button className="proj-badge mobile-hide" onClick={handleChangeProject}>
+            <div className="proj-dot" style={{background:projColor}}/>
+            {selectedProject?.name||'ทั้งหมด'}
+          </button>
           <div style={{position:'relative'}}>
             <button className="user-badge" onClick={e=>{e.stopPropagation();setShowLogoutMenu(s=>!s);}}>
               <div className="user-avatar">{initials(userName)}</div>
               <span className="mobile-hide">{userName}</span>
               {isAdmin?<span className="role-admin">ADMIN</span>:<span className="role-employee">พนักงาน</span>}
             </button>
-            {showLogoutMenu&&<div style={{position:'absolute',right:0,top:'110%',background:'#fff',border:'1px solid #e2e8f0',borderRadius:10,boxShadow:'0 8px 24px rgba(0,0,0,.12)',padding:'8px',minWidth:180,zIndex:300}} onClick={e=>e.stopPropagation()}>
+            {showLogoutMenu&&<div style={{position:'absolute',right:0,top:'110%',background:'#fff',border:'1px solid #e2e8f0',borderRadius:10,boxShadow:'0 8px 24px rgba(0,0,0,.12)',padding:'8px',minWidth:190,zIndex:300}} onClick={e=>e.stopPropagation()}>
               <div style={{padding:'8px 12px',fontSize:12,color:'#718096',borderBottom:'1px solid #f0f4f8',marginBottom:4}}>
                 <strong style={{color:'#1a202c'}}>{userName}</strong><br/>{currentUser?.email}
               </div>
-              <button style={{width:'100%',padding:'8px 12px',background:'none',border:'none',cursor:'pointer',textAlign:'left',fontSize:12,color:'#374151',borderRadius:6,display:'flex',gap:8,alignItems:'center'}} onClick={handleLogout}>🚪 ออกจากระบบ</button>
-              {isAdmin&&<button style={{width:'100%',padding:'8px 12px',background:'none',border:'none',cursor:'pointer',textAlign:'left',fontSize:12,color:'#ef4444',borderRadius:6,display:'flex',gap:8,alignItems:'center'}} onClick={handleResetConfig}>⚙️ รีเซ็ต Firebase Config</button>}
+              <button style={{width:'100%',padding:'8px 12px',background:'none',border:'none',cursor:'pointer',textAlign:'left',fontSize:12,color:'#374151',borderRadius:6,display:'flex',gap:8}} onClick={handleChangeProject}>🏗️ เปลี่ยนโปรเจ็ค</button>
+              <button style={{width:'100%',padding:'8px 12px',background:'none',border:'none',cursor:'pointer',textAlign:'left',fontSize:12,color:'#374151',borderRadius:6,display:'flex',gap:8}} onClick={handleLogout}>🚪 ออกจากระบบ</button>
+              {isAdmin&&<button style={{width:'100%',padding:'8px 12px',background:'none',border:'none',cursor:'pointer',textAlign:'left',fontSize:12,color:'#ef4444',borderRadius:6,display:'flex',gap:8}} onClick={handleResetConfig}>⚙️ รีเซ็ต</button>}
             </div>}
           </div>
         </div>
       </div>
-      {page==='dashboard'&&<Dashboard products={products} transactions={transactions}/>}
+      {/* Project banner */}
+      {selectedProject&&<div style={{background:projColor+'18',borderBottom:`2px solid ${projColor}30`,padding:'6px 22px',display:'flex',alignItems:'center',gap:8}}>
+        <div style={{width:8,height:8,borderRadius:'50%',background:projColor}}/>
+        <span style={{fontSize:12,fontWeight:700,color:projColor}}>{selectedProject.name}</span>
+        <span style={{fontSize:11,color:'#718096'}}>📍 {selectedProject.location}</span>
+        {isAdmin&&<span style={{marginLeft:'auto',fontSize:11,color:'#a0aec0',cursor:'pointer'}} onClick={handleChangeProject}>เปลี่ยน →</span>}
+      </div>}
+      {page==='dashboard'&&<Dashboard products={products} transactions={displayedTx}/>}
       {page==='products'&&<ProductsPage products={products} onAdd={addProduct} onEdit={editProduct} onDelete={isAdmin?deleteProduct:null}/>}
-      {page==='transactions'&&<TransactionsPage products={products} transactions={transactions} onAdd={addTx} currentUser={currentUser}/>}
-      {page==='reports'&&<ReportsPage products={products} transactions={transactions}/>}
+      {page==='transactions'&&<TransactionsPage products={products} transactions={displayedTx} onAdd={addTx} currentUser={currentUser} selectedProject={selectedProject}/>}
+      {page==='reports'&&<ReportsPage products={products} transactions={displayedTx}/>}
+      {page==='projects'&&isAdmin&&<ProjectsPage/>}
       {page==='users'&&isAdmin&&<UsersPage currentUser={currentUser}/>}
     </div>
     <div className="bottom-nav">
