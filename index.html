@@ -280,39 +280,25 @@ select.sel{padding:7px 10px;border:1px solid #d1d5db;border-radius:8px;font-size
 <div id="root"></div>
 
 <script>
-// ── Firebase Config Store (localStorage key) ──
-const FB_CONFIG_KEY = 'mp11_fb_config';
-
-function getStoredConfig() {
-  try { return JSON.parse(localStorage.getItem(FB_CONFIG_KEY)); } catch { return null; }
-}
-function storeConfig(cfg) {
-  localStorage.setItem(FB_CONFIG_KEY, JSON.stringify(cfg));
-}
+// ── Firebase Config (ฝังตายตัว ไม่ต้องกรอกทุกเครื่อง) ──
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyDpGaxTcor_KnuNxqbPHLn7B4eJAMI44zw",
+  authDomain: "maeping11.firebaseapp.com",
+  projectId: "maeping11",
+  storageBucket: "maeping11.firebasestorage.app",
+  messagingSenderId: "325723566731",
+  appId: "1:325723566731:web:8995e703dc70ca7a465a8e",
+  measurementId: "G-B9SCHLT1C8"
+};
 
 let db = null;
 let auth = null;
 
-function initFirebase(config) {
-  try {
-    if (firebase.apps.length) firebase.apps.forEach(a => a.delete());
-    firebase.initializeApp(config);
-    db = firebase.firestore();
-    auth = firebase.auth();
-    // Enable offline persistence
-    db.enablePersistence({ synchronizeTabs: true }).catch(() => {});
-    return true;
-  } catch(e) {
-    console.error(e);
-    return false;
-  }
-}
-
-// Try auto-init from stored config
-const storedCfg = getStoredConfig();
-if (storedCfg) {
-  initFirebase(storedCfg);
-}
+// เริ่ม Firebase ทันที
+firebase.initializeApp(FIREBASE_CONFIG);
+db = firebase.firestore();
+auth = firebase.auth();
+db.enablePersistence({ synchronizeTabs: true }).catch(() => {});
 </script>
 
 <script type="text/babel">
@@ -953,7 +939,7 @@ function ReportsPage({products, transactions}) {
    MAIN APP — Firebase Auth + Firestore
 ══════════════════════════════════════════ */
 function App() {
-  const [screen, setScreen] = useState(getStoredConfig() ? 'auth_check' : 'setup');
+  const [screen, setScreen] = useState('auth_check'); // เริ่มตรวจ auth เลย
   const [page, setPage] = useState('dashboard');
   const [sideOpen, setSideOpen] = useState(false);
   const [products, setProducts] = useState([]);
@@ -965,7 +951,6 @@ function App() {
 
   // ── Watch Firebase Auth state ──
   useEffect(() => {
-    if (screen === 'setup') return;
     const unsub = auth.onAuthStateChanged(async firebaseUser => {
       if (firebaseUser) {
         // Load role from Firestore
@@ -996,7 +981,7 @@ function App() {
       }
     });
     return unsub;
-  }, [screen === 'setup']);
+  }, []);
 
   // ── Firestore real-time listeners ──
   useEffect(() => {
@@ -1072,10 +1057,8 @@ function App() {
 
   const handleResetConfig = () => {
     setShowLogoutMenu(false);
-    if(window.confirm('ล้าง Firebase Config และออกจากระบบ?')) {
-      auth.signOut();
-      localStorage.removeItem('mp11_fb_config');
-      window.location.reload();
+    if(window.confirm('ออกจากระบบและ reload?')) {
+      auth.signOut().then(() => window.location.reload());
     }
   };
 
@@ -1096,7 +1079,6 @@ function App() {
   const initials = s => s?s.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2):'?';
 
   // ── Screens ──
-  if (screen === 'setup') return <SetupScreen onConnect={() => setScreen('auth_check')}/>;
   if (screen === 'auth_check' || screen === 'login') return <LoginScreen onLogin={()=>{}} />;
   if (screen === 'loading') return <div className="loading-screen">
     <div className="spinner"/>
