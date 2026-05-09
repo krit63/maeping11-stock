@@ -1,0 +1,1172 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="theme-color" content="#1a3a5c"/>
+<title>ระบบสต็อก บจก.แม่ปิง 11</title>
+
+<!-- Firebase v9 compat -->
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
+<!-- React + Babel -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+body{font-family:'Sarabun',sans-serif;background:#f0f4f8;color:#1a202c;min-height:100vh;}
+
+/* ── Setup Screen ── */
+.setup-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;background:linear-gradient(135deg,#1a3a5c 0%,#0f2540 100%);}
+.setup-card{background:#fff;border-radius:20px;padding:32px;width:100%;max-width:540px;box-shadow:0 20px 60px rgba(0,0,0,0.3);}
+.setup-logo{text-align:center;margin-bottom:24px;}
+.setup-logo .logo-icon{width:60px;height:60px;background:linear-gradient(135deg,#3b82f6,#60a5fa);border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:28px;margin:0 auto 12px;}
+.setup-logo h1{font-size:20px;font-weight:700;color:#1a202c;}
+.setup-logo p{font-size:13px;color:#718096;margin-top:4px;}
+.setup-steps{background:#f7fafc;border-radius:12px;padding:16px;margin-bottom:20px;}
+.setup-steps h3{font-size:13px;font-weight:700;color:#374151;margin-bottom:10px;}
+.step{display:flex;gap:10px;margin-bottom:10px;font-size:12px;color:#4a5568;}
+.step-num{width:22px;height:22px;background:#3b82f6;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;}
+.step a{color:#3b82f6;text-decoration:none;}
+.config-area{width:100%;padding:10px;border:1px solid #d1d5db;border-radius:8px;font-family:monospace;font-size:11px;resize:vertical;min-height:160px;outline:none;color:#374151;}
+.config-area:focus{border-color:#3b82f6;box-shadow:0 0 0 3px rgba(59,130,246,.1);}
+.btn-setup{width:100%;padding:12px;background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;font-family:'Sarabun',sans-serif;margin-top:12px;}
+.btn-setup:hover{opacity:.9;}
+.setup-err{background:#fef2f2;border:1px solid #fecaca;color:#991b1b;padding:10px 14px;border-radius:8px;font-size:12px;margin-top:10px;}
+.or-divider{text-align:center;color:#a0aec0;font-size:12px;margin:12px 0;}
+
+/* ── Sidebar ── */
+.sidebar{width:220px;min-height:100vh;background:linear-gradient(180deg,#1a3a5c 0%,#0f2540 100%);position:fixed;top:0;left:0;z-index:100;display:flex;flex-direction:column;transition:transform .25s;}
+.sidebar-logo{padding:20px 16px 16px;border-bottom:1px solid rgba(255,255,255,.1);}
+.sidebar-logo .logo-icon{width:38px;height:38px;background:linear-gradient(135deg,#3b82f6,#60a5fa);border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:18px;margin-bottom:8px;}
+.sidebar-logo h1{color:#fff;font-size:14px;font-weight:700;line-height:1.4;}
+.sidebar-logo p{color:rgba(255,255,255,.45);font-size:11px;margin-top:2px;}
+.nav-section{padding:10px 0;}
+.nav-label{color:rgba(255,255,255,.3);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;padding:6px 16px 3px;}
+.nav-item{display:flex;align-items:center;gap:9px;padding:10px 16px;cursor:pointer;color:rgba(255,255,255,.6);font-size:13px;transition:all .15s;border-left:3px solid transparent;}
+.nav-item:hover{background:rgba(255,255,255,.08);color:#fff;}
+.nav-item.active{background:rgba(59,130,246,.2);color:#60a5fa;border-left-color:#3b82f6;}
+.nav-item .icon{font-size:15px;width:18px;text-align:center;}
+.nav-badge{margin-left:auto;background:#ef4444;color:#fff;border-radius:10px;padding:1px 6px;font-size:10px;font-weight:700;}
+.sidebar-footer{margin-top:auto;padding:14px 16px;border-top:1px solid rgba(255,255,255,.1);font-size:11px;color:rgba(255,255,255,.35);}
+.sync-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:#10b981;margin-right:4px;animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.4;}}
+
+/* ── Main ── */
+.main{margin-left:220px;min-height:100vh;padding-bottom:20px;}
+.topbar{background:#fff;padding:13px 22px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #e2e8f0;position:sticky;top:0;z-index:50;}
+.topbar-left{display:flex;align-items:center;gap:10px;}
+.topbar h2{font-size:16px;font-weight:700;}
+.hamburger{display:none;background:none;border:none;font-size:20px;cursor:pointer;padding:4px;}
+.topbar-right{display:flex;align-items:center;gap:8px;}
+.topbar-date{color:#718096;font-size:12px;}
+.page{padding:18px 22px;}
+
+/* ── Buttons ── */
+.btn{display:inline-flex;align-items:center;gap:5px;padding:8px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;border:none;transition:all .15s;font-family:'Sarabun',sans-serif;white-space:nowrap;}
+.btn-primary{background:#3b82f6;color:#fff;}.btn-primary:hover{background:#2563eb;}
+.btn-success{background:#10b981;color:#fff;}.btn-success:hover{background:#059669;}
+.btn-danger{background:#ef4444;color:#fff;}.btn-danger:hover{background:#dc2626;}
+.btn-outline{background:#fff;color:#374151;border:1px solid #d1d5db;}.btn-outline:hover{background:#f9fafb;}
+.btn-sm{padding:5px 9px;font-size:11px;}
+.btn:disabled{opacity:.5;cursor:not-allowed;}
+
+/* ── Stat cards ── */
+.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px;}
+.stat-card{background:#fff;border-radius:12px;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,.07);}
+.stat-header{display:flex;justify-content:space-between;align-items:flex-start;}
+.stat-label{font-size:11px;color:#718096;font-weight:600;text-transform:uppercase;letter-spacing:.4px;}
+.stat-value{font-size:26px;font-weight:700;margin:4px 0 2px;}
+.stat-sub{font-size:11px;color:#a0aec0;}
+.stat-icon{font-size:26px;}
+.stat-blue .stat-value{color:#3b82f6;}
+.stat-green .stat-value{color:#10b981;}
+.stat-red .stat-value{color:#ef4444;}
+.stat-yellow .stat-value{color:#f59e0b;}
+
+/* ── Cards ── */
+.card{background:#fff;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,.07);overflow:hidden;margin-bottom:16px;}
+.card-header{padding:14px 18px;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.card-header h3{font-size:14px;font-weight:700;}
+
+/* ── Table ── */
+.table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+table{width:100%;border-collapse:collapse;min-width:500px;}
+th{background:#f7fafc;color:#718096;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;padding:9px 14px;text-align:left;border-bottom:1px solid #e2e8f0;white-space:nowrap;}
+td{padding:11px 14px;border-bottom:1px solid #f0f4f8;font-size:12px;vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:#f7fafc;}
+
+/* ── Badges ── */
+.badge{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:600;white-space:nowrap;}
+.badge-success{background:#d1fae5;color:#065f46;}
+.badge-warning{background:#fef3c7;color:#92400e;}
+.badge-danger{background:#fee2e2;color:#991b1b;}
+.badge-info{background:#dbeafe;color:#1e40af;}
+.badge-gray{background:#f3f4f6;color:#374151;}
+
+/* ── Product ── */
+.prod-img{width:40px;height:40px;border-radius:8px;background:#f0f4f8;display:flex;align-items:center;justify-content:center;font-size:18px;overflow:hidden;flex-shrink:0;}
+.prod-img img{width:100%;height:100%;object-fit:cover;border-radius:8px;}
+.prod-info{display:flex;align-items:center;gap:10px;}
+.prod-name{font-weight:600;color:#1a202c;font-size:12px;}
+.prod-sku{font-size:10px;color:#a0aec0;}
+
+/* ── Stock bar ── */
+.stock-bar-wrap{display:flex;align-items:center;gap:6px;}
+.stock-bar{flex:1;height:5px;background:#e2e8f0;border-radius:3px;overflow:hidden;min-width:50px;}
+.stock-bar-fill{height:100%;border-radius:3px;}
+.fill-safe{background:#10b981;}.fill-warn{background:#f59e0b;}.fill-danger{background:#ef4444;}
+.stock-num{font-size:12px;font-weight:700;min-width:30px;text-align:right;}
+
+/* ── Search ── */
+.search-bar{display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap;}
+.search-wrap{position:relative;flex:1;min-width:160px;max-width:280px;}
+.search-input{width:100%;padding:8px 10px 8px 32px;border:1px solid #d1d5db;border-radius:8px;font-size:12px;font-family:'Sarabun',sans-serif;background:#fff;outline:none;}
+.search-input:focus{border-color:#3b82f6;}
+.search-icon{position:absolute;left:9px;top:50%;transform:translateY(-50%);color:#a0aec0;font-size:13px;}
+select.sel{padding:7px 10px;border:1px solid #d1d5db;border-radius:8px;font-size:12px;font-family:'Sarabun',sans-serif;background:#fff;outline:none;cursor:pointer;}
+
+/* ── Form ── */
+.form-group{margin-bottom:14px;}
+.form-label{display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:5px;}
+.form-label span{color:#ef4444;}
+.form-control{width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;font-family:'Sarabun',sans-serif;transition:border-color .2s;outline:none;}
+.form-control:focus{border-color:#3b82f6;box-shadow:0 0 0 3px rgba(59,130,246,.1);}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.form-hint{font-size:10px;color:#a0aec0;margin-top:3px;}
+
+/* ── Modal ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:flex;align-items:center;justify-content:center;padding:16px;}
+.modal{background:#fff;border-radius:14px;width:100%;max-width:480px;max-height:92vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.2);}
+.modal-header{padding:16px 20px 13px;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:#fff;z-index:1;}
+.modal-header h3{font-size:15px;font-weight:700;}
+.modal-close{background:none;border:none;font-size:18px;cursor:pointer;color:#a0aec0;padding:2px 5px;border-radius:4px;}
+.modal-close:hover{color:#4a5568;background:#f7fafc;}
+.modal-body{padding:16px 20px;}
+.modal-footer{padding:13px 20px;border-top:1px solid #e2e8f0;display:flex;gap:8px;justify-content:flex-end;}
+
+/* ── Alert ── */
+.alert{display:flex;align-items:flex-start;gap:8px;padding:10px 14px;border-radius:9px;margin-bottom:14px;font-size:12px;}
+.alert-warning{background:#fffbeb;border:1px solid #fde68a;color:#92400e;}
+.alert-danger{background:#fef2f2;border:1px solid #fecaca;color:#991b1b;}
+.alert-info{background:#eff6ff;border:1px solid #bfdbfe;color:#1e40af;}
+
+/* ── Charts ── */
+.charts-grid{display:grid;grid-template-columns:3fr 2fr;gap:14px;margin-bottom:16px;}
+.chart-wrap{padding:14px 16px;height:200px;}
+
+/* ── Reorder ── */
+.reorder-item{display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid #f0f4f8;}
+.reorder-item:last-child{border-bottom:none;}
+.ri-info h4{font-size:12px;font-weight:700;}
+.ri-info p{font-size:11px;color:#718096;}
+.ri-qty{margin-left:auto;text-align:right;flex-shrink:0;}
+.ri-qty .qn{font-size:16px;font-weight:700;color:#3b82f6;}
+.ri-qty .ql{font-size:10px;color:#a0aec0;}
+
+/* ── Tx ── */
+.tx-in{color:#10b981;font-weight:700;}
+.tx-out{color:#ef4444;font-weight:700;}
+
+/* ── Empty ── */
+.empty-state{text-align:center;padding:36px 16px;color:#a0aec0;}
+.empty-state .ei{font-size:42px;margin-bottom:10px;}
+.empty-state p{font-size:13px;}
+
+/* ── Loading ── */
+.loading-screen{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:#f0f4f8;}
+.spinner{width:40px;height:40px;border:4px solid #e2e8f0;border-top-color:#3b82f6;border-radius:50%;animation:spin .8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.loading-text{font-size:14px;color:#718096;}
+
+/* ── Mobile bottom nav ── */
+.bottom-nav{display:none;position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #e2e8f0;z-index:100;padding:4px 0 env(safe-area-inset-bottom);}
+.bottom-nav-inner{display:grid;grid-template-columns:repeat(4,1fr);}
+.bn-item{display:flex;flex-direction:column;align-items:center;padding:6px 4px;cursor:pointer;color:#a0aec0;gap:2px;transition:color .15s;}
+.bn-item.active{color:#3b82f6;}
+.bn-icon{font-size:20px;position:relative;}
+.bn-label{font-size:10px;font-weight:600;}
+.bn-badge{position:absolute;top:-4px;right:-6px;background:#ef4444;color:#fff;border-radius:8px;padding:0 4px;font-size:9px;font-weight:700;}
+
+/* ── Sidebar overlay ── */
+.sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:99;}
+
+/* ── Mobile product cards ── */
+.prod-cards-grid{display:none;grid-template-columns:1fr 1fr;gap:10px;padding:0 0 14px;}
+.prod-card{background:#fff;border-radius:10px;padding:12px;box-shadow:0 1px 4px rgba(0,0,0,.08);cursor:pointer;}
+.prod-card-top{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+.prod-card-icon{width:36px;height:36px;border-radius:8px;background:#f0f4f8;display:flex;align-items:center;justify-content:center;font-size:18px;overflow:hidden;flex-shrink:0;}
+.prod-card-icon img{width:100%;height:100%;object-fit:cover;border-radius:7px;}
+.prod-card-name{font-size:12px;font-weight:700;line-height:1.3;}
+.prod-card-sku{font-size:10px;color:#a0aec0;}
+.prod-card-qty{font-size:20px;font-weight:700;}
+.prod-card-unit{font-size:10px;color:#718096;}
+
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:#f0f4f8;}
+::-webkit-scrollbar-thumb{background:#cbd5e0;border-radius:3px;}
+
+/* ── Responsive ── */
+@media(max-width:900px){
+  .stat-grid{grid-template-columns:repeat(2,1fr);}
+  .charts-grid{grid-template-columns:1fr;}
+}
+@media(max-width:680px){
+  .sidebar{transform:translateX(-100%);}
+  .sidebar.open{transform:translateX(0);}
+  .sidebar-overlay.show{display:block;}
+  .main{margin-left:0;padding-bottom:70px;}
+  .topbar{padding:10px 14px;}
+  .hamburger{display:block;}
+  .topbar-date{display:none;}
+  .page{padding:12px 12px;}
+  .stat-grid{grid-template-columns:repeat(2,1fr);gap:10px;}
+  .stat-value{font-size:22px;}
+  .bottom-nav{display:block;}
+  .form-row{grid-template-columns:1fr;}
+  .mobile-show{display:grid!important;}
+  .mobile-hide{display:none!important;}
+  .charts-grid{grid-template-columns:1fr;}
+}
+@media(max-width:400px){
+  .prod-cards-grid{grid-template-columns:1fr;}
+}
+@media print{
+  .sidebar,.topbar,.btn,.search-bar,.bottom-nav{display:none!important;}
+  .main{margin-left:0;}
+}
+
+/* ── Login Screen ── */
+.login-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;background:linear-gradient(135deg,#1a3a5c 0%,#0f2540 100%);}
+.login-card{background:#fff;border-radius:20px;padding:36px 32px;width:100%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,0.35);}
+.login-logo{text-align:center;margin-bottom:28px;}
+.login-logo .logo-icon{width:64px;height:64px;background:linear-gradient(135deg,#3b82f6,#60a5fa);border-radius:18px;display:flex;align-items:center;justify-content:center;font-size:30px;margin:0 auto 12px;}
+.login-logo h1{font-size:20px;font-weight:800;color:#1a202c;}
+.login-logo p{font-size:13px;color:#718096;margin-top:4px;}
+.login-field{margin-bottom:16px;}
+.login-field label{display:block;font-size:12px;font-weight:700;color:#374151;margin-bottom:6px;}
+.login-input{width:100%;padding:11px 14px;border:1.5px solid #d1d5db;border-radius:10px;font-size:14px;font-family:'Sarabun',sans-serif;outline:none;transition:border-color .2s,box-shadow .2s;}
+.login-input:focus{border-color:#3b82f6;box-shadow:0 0 0 3px rgba(59,130,246,.12);}
+.login-btn{width:100%;padding:13px;background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;font-family:'Sarabun',sans-serif;margin-top:4px;transition:opacity .15s;}
+.login-btn:hover{opacity:.9;}
+.login-btn:disabled{opacity:.5;cursor:not-allowed;}
+.login-err{background:#fef2f2;border:1px solid #fecaca;color:#991b1b;padding:10px 14px;border-radius:8px;font-size:12px;margin-top:12px;text-align:center;}
+.login-footer{text-align:center;margin-top:20px;font-size:11px;color:#a0aec0;}
+
+/* ── User badge in topbar ── */
+.user-badge{display:flex;align-items:center;gap:6px;padding:5px 10px;border-radius:8px;background:#f0f4f8;cursor:pointer;font-size:12px;font-weight:600;color:#374151;border:none;}
+.user-avatar{width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#3b82f6,#60a5fa);display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:700;}
+.role-admin{background:#dbeafe;color:#1e40af;padding:1px 7px;border-radius:10px;font-size:9px;font-weight:700;}
+.role-employee{background:#d1fae5;color:#065f46;padding:1px 7px;border-radius:10px;font-size:9px;font-weight:700;}
+
+/* ── Users Page ── */
+.user-row{display:flex;align-items:center;gap:12px;padding:12px 18px;border-bottom:1px solid #f0f4f8;}
+.user-row:last-child{border-bottom:none;}
+.user-row-avatar{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#3b82f6,#60a5fa);display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px;font-weight:700;flex-shrink:0;}
+.user-row-info h4{font-size:13px;font-weight:700;}
+.user-row-info p{font-size:11px;color:#718096;}
+.user-row-actions{margin-left:auto;display:flex;gap:6px;align-items:center;flex-shrink:0;}
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script>
+// ── Firebase Config Store (localStorage key) ──
+const FB_CONFIG_KEY = 'mp11_fb_config';
+
+function getStoredConfig() {
+  try { return JSON.parse(localStorage.getItem(FB_CONFIG_KEY)); } catch { return null; }
+}
+function storeConfig(cfg) {
+  localStorage.setItem(FB_CONFIG_KEY, JSON.stringify(cfg));
+}
+
+let db = null;
+let auth = null;
+
+function initFirebase(config) {
+  try {
+    if (firebase.apps.length) firebase.apps.forEach(a => a.delete());
+    firebase.initializeApp(config);
+    db = firebase.firestore();
+    auth = firebase.auth();
+    // Enable offline persistence
+    db.enablePersistence({ synchronizeTabs: true }).catch(() => {});
+    return true;
+  } catch(e) {
+    console.error(e);
+    return false;
+  }
+}
+
+// Try auto-init from stored config
+const storedCfg = getStoredConfig();
+if (storedCfg) {
+  initFirebase(storedCfg);
+}
+</script>
+
+<script type="text/babel">
+const {useState,useEffect,useRef,useCallback} = React;
+
+/* ── helpers ── */
+const fmtNum = n => Number(n).toLocaleString('th-TH');
+const fmtDate = d => { try { return new Date(d).toLocaleDateString('th-TH',{day:'2-digit',month:'short',year:'numeric'}); } catch { return '-'; }};
+const fmtDT = d => { try { return new Date(d).toLocaleDateString('th-TH',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}); } catch { return '-'; }};
+const todayStr = () => new Date().toISOString().slice(0,10);
+
+/* ── Seed Products (from Excel) ── */
+const SEED_PRODUCTS = [{"id":"W0001","name":"ใบตัด 4\"","sku":"W0001","category":"ใบตัด/ใบเจียร์","unit":"ใบ","emoji":"⚙️","imageUrl":"","qty":0,"minQty":50,"reorderQty":100,"costPrice":0,"note":"ใช้ไปแล้ว 2877 ใบ"},{"id":"W0002","name":"ใบตัด 7\"","sku":"W0002","category":"ใบตัด/ใบเจียร์","unit":"ใบ","emoji":"⚙️","imageUrl":"","qty":0,"minQty":50,"reorderQty":100,"costPrice":0,"note":"ใช้ไปแล้ว 367 ใบ"},{"id":"W0003","name":"ใบตัดไฟเบอร์ 14\"","sku":"W0003","category":"ใบตัด/ใบเจียร์","unit":"ใบ","emoji":"⚙️","imageUrl":"","qty":36,"minQty":10,"reorderQty":20,"costPrice":0,"note":"ใช้ไปแล้ว 64 ใบ"},{"id":"W0004","name":"ใบเจียร์ หนา 7\"","sku":"W0004","category":"ใบตัด/ใบเจียร์","unit":"ใบ","emoji":"⚙️","imageUrl":"","qty":0,"minQty":50,"reorderQty":100,"costPrice":0,"note":"ใช้ไปแล้ว 142 ใบ"},{"id":"W0005","name":"ใบเจียร์ หนา 4\"x4","sku":"W0005","category":"ใบตัด/ใบเจียร์","unit":"ใบ","emoji":"⚙️","imageUrl":"","qty":69,"minQty":50,"reorderQty":100,"costPrice":0,"note":"ใช้ไปแล้ว 1181 ใบ"},{"id":"W0006","name":"ใบเจียร์ หนา 4\"x6","sku":"W0006","category":"ใบตัด/ใบเจียร์","unit":"ใบ","emoji":"⚙️","imageUrl":"","qty":0,"minQty":50,"reorderQty":100,"costPrice":0,"note":"ใช้ไปแล้ว 271 ใบ"},{"id":"W0007","name":"ใบเจียร์ บาง 4\"x2","sku":"W0007","category":"ใบตัด/ใบเจียร์","unit":"ใบ","emoji":"⚙️","imageUrl":"","qty":270,"minQty":50,"reorderQty":100,"costPrice":0,"note":"ใช้ไปแล้ว 1320 ใบ"},{"id":"W0008","name":"ใบปัดหางเปีย 4\"","sku":"W0008","category":"ใบตัด/ใบเจียร์","unit":"ใบ","emoji":"⚙️","imageUrl":"","qty":24,"minQty":20,"reorderQty":40,"costPrice":0,"note":"ใช้ไปแล้ว 50 ใบ"},{"id":"W0009","name":"ใบปัดกระดาษทราย #120 4\"","sku":"W0009","category":"ใบตัด/ใบเจียร์","unit":"ใบ","emoji":"⚙️","imageUrl":"","qty":121,"minQty":20,"reorderQty":40,"costPrice":0,"note":"ใช้ไปแล้ว 79 ใบ"},{"id":"W0010","name":"ลวดเชื่อม LB-52 3.2","sku":"W0010","category":"ลวดเชื่อม","unit":"kg","emoji":"🔥","imageUrl":"","qty":0,"minQty":20,"reorderQty":40,"costPrice":0,"note":""},{"id":"W0011","name":"ลวดเชื่อม LB-52 4.0","sku":"W0011","category":"ลวดเชื่อม","unit":"kg","emoji":"🔥","imageUrl":"","qty":0,"minQty":20,"reorderQty":40,"costPrice":0,"note":""},{"id":"W0012","name":"ลวดเชื่อม RB-26 2.6","sku":"W0012","category":"ลวดเชื่อม","unit":"kg","emoji":"🔥","imageUrl":"","qty":0,"minQty":5,"reorderQty":10,"costPrice":0,"note":""},{"id":"W0013","name":"ลวดเชื่อม TG-S50 2.4","sku":"W0013","category":"ลวดเชื่อม","unit":"หลอด","emoji":"🔥","imageUrl":"","qty":0,"minQty":3,"reorderQty":6,"costPrice":0,"note":""},{"id":"W0019","name":"ลวดเชื่อม MIG yawata 0.8","sku":"W0019","category":"ลวดเชื่อม","unit":"ม้วน","emoji":"🔥","imageUrl":"","qty":9,"minQty":1,"reorderQty":2,"costPrice":0,"note":""},{"id":"W0026","name":"ถุงมือผ้า","sku":"W0026","category":"อุปกรณ์ความปลอดภัย","unit":"คู่","emoji":"🦺","imageUrl":"","qty":0,"minQty":100,"reorderQty":200,"costPrice":0,"note":"ใช้ไปแล้ว 2692 คู่"},{"id":"W0027","name":"ถุงมือเชื่อมอาร์กอน","sku":"W0027","category":"อุปกรณ์ความปลอดภัย","unit":"คู่","emoji":"🦺","imageUrl":"","qty":0,"minQty":5,"reorderQty":10,"costPrice":0,"note":""},{"id":"W0028","name":"ถุงมือเชื่อมไฟฟ้า","sku":"W0028","category":"อุปกรณ์ความปลอดภัย","unit":"คู่","emoji":"🦺","imageUrl":"","qty":0,"minQty":5,"reorderQty":10,"costPrice":0,"note":""},{"id":"W0029","name":"ถุงมือหนังสั้น 10\"","sku":"W0029","category":"อุปกรณ์ความปลอดภัย","unit":"คู่","emoji":"🦺","imageUrl":"","qty":4,"minQty":5,"reorderQty":10,"costPrice":0,"note":""},{"id":"W0035","name":"ชุดPPE (ชุดกันสาร)","sku":"W0035","category":"อุปกรณ์ความปลอดภัย","unit":"ชุด","emoji":"🦺","imageUrl":"","qty":0,"minQty":10,"reorderQty":20,"costPrice":0,"note":""},{"id":"W0052","name":"ดอกคาร์ไบน์ตรง","sku":"W0052","category":"ดอกเจาะ","unit":"ตัว","emoji":"🔩","imageUrl":"","qty":25,"minQty":10,"reorderQty":20,"costPrice":0,"note":""},{"id":"W0053","name":"ดอกคาร์ไบน์แหลม","sku":"W0053","category":"ดอกเจาะ","unit":"ตัว","emoji":"🔩","imageUrl":"","qty":0,"minQty":10,"reorderQty":20,"costPrice":0,"note":""},{"id":"W0054","name":"ดอกโอเล่ 15*30","sku":"W0054","category":"ดอกเจาะ","unit":"ตัว","emoji":"🔩","imageUrl":"","qty":0,"minQty":10,"reorderQty":20,"costPrice":0,"note":""},{"id":"W0055","name":"ดอกโอเล่ 23*30","sku":"W0055","category":"ดอกเจาะ","unit":"ตัว","emoji":"🔩","imageUrl":"","qty":32,"minQty":10,"reorderQty":20,"costPrice":0,"note":""},{"id":"W0066","name":"อะไหล่ TIG สลิปนอก 2.4","sku":"W0066","category":"อะไหล่เครื่องเชื่อม","unit":"ตัว","emoji":"🔧","imageUrl":"","qty":15,"minQty":10,"reorderQty":20,"costPrice":0,"note":""},{"id":"W0067","name":"อะไหล่ TIG สลิปใน 2.4","sku":"W0067","category":"อะไหล่เครื่องเชื่อม","unit":"ตัว","emoji":"🔧","imageUrl":"","qty":26,"minQty":10,"reorderQty":20,"costPrice":0,"note":""},{"id":"W0068","name":"อะไหล่ TIG 3ตัวชุดอาร์กอน","sku":"W0068","category":"อะไหล่เครื่องเชื่อม","unit":"เซ็ต","emoji":"🔧","imageUrl":"","qty":0,"minQty":5,"reorderQty":10,"costPrice":0,"note":""},{"id":"W0100","name":"อะไหล่ MIG gas diffuser","sku":"W0100","category":"อะไหล่เครื่องเชื่อม","unit":"อัน","emoji":"🔧","imageUrl":"","qty":6,"minQty":4,"reorderQty":8,"costPrice":0,"note":""},{"id":"W0105","name":"อะไหล่ MIG contact tip 0.8","sku":"W0105","category":"อะไหล่เครื่องเชื่อม","unit":"อัน","emoji":"🔧","imageUrl":"","qty":23,"minQty":6,"reorderQty":12,"costPrice":0,"note":""},{"id":"W0106","name":"อะไหล่ MIG contact tip 1.0","sku":"W0106","category":"อะไหล่เครื่องเชื่อม","unit":"อัน","emoji":"🔧","imageUrl":"","qty":9,"minQty":6,"reorderQty":12,"costPrice":0,"note":""},{"id":"W0107","name":"อะไหล่ MIG contact tip 1.2","sku":"W0107","category":"อะไหล่เครื่องเชื่อม","unit":"อัน","emoji":"🔧","imageUrl":"","qty":10,"minQty":6,"reorderQty":12,"costPrice":0,"note":""},{"id":"W0116","name":"เศษผ้า","sku":"W0116","category":"สิ้นเปลือง","unit":"ผืน","emoji":"📦","imageUrl":"","qty":159,"minQty":10,"reorderQty":20,"costPrice":0,"note":""},{"id":"W0021","name":"กระดาษกาว 100mx36\"","sku":"W0021","category":"สิ้นเปลือง","unit":"ม้วน","emoji":"📦","imageUrl":"","qty":0,"minQty":4,"reorderQty":8,"costPrice":0,"note":""},{"id":"W0022","name":"เทปดำพันสายไฟ","sku":"W0022","category":"สิ้นเปลือง","unit":"ม้วน","emoji":"📦","imageUrl":"","qty":0,"minQty":2,"reorderQty":4,"costPrice":0,"note":""},{"id":"W0041","name":"ลูกกลิ้งทาสี","sku":"W0041","category":"น้ำมัน/สี","unit":"ลูก","emoji":"🛢️","imageUrl":"","qty":0,"minQty":10,"reorderQty":20,"costPrice":0,"note":""},{"id":"W0042","name":"แปรงทาสี 1นิ้ว","sku":"W0042","category":"น้ำมัน/สี","unit":"กล่อง","emoji":"🛢️","imageUrl":"","qty":0,"minQty":1,"reorderQty":2,"costPrice":0,"note":""},{"id":"W0113","name":"พาวเวอร์ปลั๊กตัวผู้ 16A","sku":"W0113","category":"อุปกรณ์ทั่วไป","unit":"อัน","emoji":"🔌","imageUrl":"","qty":4,"minQty":2,"reorderQty":4,"costPrice":0,"note":""},{"id":"W0117","name":"ปากจับหินเจียร์","sku":"W0117","category":"อุปกรณ์ทั่วไป","unit":"ดอก","emoji":"🔨","imageUrl":"","qty":12,"minQty":2,"reorderQty":4,"costPrice":0,"note":""}];
+
+/* ── Setup Screen ── */
+function SetupScreen({onConnect}) {
+  const [configText, setConfigText] = useState('');
+  const [err, setErr] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const EXAMPLE = `{
+  "apiKey": "AIzaSy...",
+  "authDomain": "my-project.firebaseapp.com",
+  "projectId": "my-project",
+  "storageBucket": "my-project.appspot.com",
+  "messagingSenderId": "123456789",
+  "appId": "1:123456789:web:abc123"
+}`;
+
+  const parseConfig = (raw) => {
+    let cfg = raw.trim();
+
+    // วิธีที่ 1: ลอง JSON.parse ตรงๆ (กรณีวาง JSON มา)
+    try { const r = JSON.parse(cfg); if (r.apiKey) return r; } catch {}
+
+    // วิธีที่ 2: ดึง object จาก Firebase snippet แล้วแปลง JS→JSON
+    const extractObj = (s) => {
+      const m = s.match(/(?:firebaseConfig\s*=\s*)?(\{[\s\S]*?\})\s*[;,]?\s*$/);
+      if (!m) return null;
+      // Quote unquoted keys: apiKey: → "apiKey":
+      const json = m[1]
+        .replace(/([{,]\s*)([a-zA-Z_$][a-zA-Z0-9_$]*)\s*:/g, '$1"$2":')
+        .replace(/'/g, '"');          // single quotes → double quotes
+      try { return JSON.parse(json); } catch { return null; }
+    };
+    const r2 = extractObj(cfg);
+    if (r2?.apiKey) return r2;
+
+    // วิธีที่ 3: ใช้ Function() eval — รองรับทุก JS format
+    try {
+      // ดึงแค่ {} block
+      const m = cfg.match(/\{[\s\S]*\}/);
+      if (m) {
+        const r3 = new Function('return (' + m[0] + ')')();
+        if (r3?.apiKey) return r3;
+      }
+    } catch {}
+
+    return null;
+  };
+
+  const handleConnect = () => {
+    setErr('');
+    setLoading(true);
+    try {
+      const parsed = parseConfig(configText);
+      if (!parsed || !parsed.apiKey || !parsed.projectId) {
+        setErr('ไม่พบ apiKey หรือ projectId — กรุณา Copy ทั้งบล็อก firebaseConfig จาก Firebase Console');
+        setLoading(false);
+        return;
+      }
+      const ok = initFirebase(parsed);
+      if (!ok) { setErr('เชื่อมต่อ Firebase ไม่สำเร็จ กรุณาตรวจสอบ Config อีกครั้ง'); setLoading(false); return; }
+      storeConfig(parsed);
+      setTimeout(() => { setLoading(false); onConnect(); }, 800);
+    } catch(e) {
+      setErr('เกิดข้อผิดพลาด: ' + e.message);
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="setup-screen">
+      <div className="setup-card">
+        <div className="setup-logo">
+          <div className="logo-icon">🏗️</div>
+          <h1>บจก.แม่ปิง 11</h1>
+          <p>ตั้งค่า Firebase เพื่อเริ่มใช้งาน</p>
+        </div>
+
+        <div className="setup-steps">
+          <h3>📋 วิธีรับ Firebase Config (ฟรี)</h3>
+          <div className="step"><div className="step-num">1</div><div>ไปที่ <a href="https://console.firebase.google.com" target="_blank">console.firebase.google.com</a> แล้วล็อกอินด้วย Google</div></div>
+          <div className="step"><div className="step-num">2</div><div>กด <strong>"Add project"</strong> → ตั้งชื่อ เช่น <em>maeping11</em> → กด Continue จนเสร็จ</div></div>
+          <div className="step"><div className="step-num">3</div><div>ในหน้า Project → กด <strong>"Web"</strong> icon (&lt;/&gt;) → ตั้งชื่อ App → กด Register</div></div>
+          <div className="step"><div className="step-num">4</div><div>Copy <strong>firebaseConfig</strong> ที่ได้มาวางด้านล่าง</div></div>
+          <div className="step"><div className="step-num">5</div><div>ไปที่ <strong>Firestore Database</strong> → Create database → เลือก <em>Test mode</em> → Done</div></div>
+        </div>
+
+        <div className="form-group">
+          <label className="form-label">วาง Firebase Config ที่นี่ <span>*</span></label>
+          <textarea
+            className="config-area"
+            value={configText}
+            onChange={e => setConfigText(e.target.value)}
+            placeholder={EXAMPLE}
+          />
+        </div>
+        {err && <div className="setup-err">⚠️ {err}</div>}
+        <button className="btn-setup" onClick={handleConnect} disabled={loading || !configText.trim()}>
+          {loading ? '⏳ กำลังเชื่อมต่อ...' : '🔥 เชื่อมต่อ Firebase'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ── Login Screen ── */
+function LoginScreen({onLogin}) {
+  const [email, setEmail] = useState('');
+  const [pass, setPass] = useState('');
+  const [err, setErr] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [showPass, setShowPass] = useState(false);
+
+  const handleLogin = async () => {
+    setErr(''); setLoading(true);
+    try {
+      await auth.signInWithEmailAndPassword(email.trim(), pass);
+    } catch(e) {
+      const msgs = {
+        'auth/user-not-found': 'ไม่พบบัญชีนี้ในระบบ',
+        'auth/wrong-password': 'รหัสผ่านไม่ถูกต้อง',
+        'auth/invalid-email': 'รูปแบบอีเมลไม่ถูกต้อง',
+        'auth/too-many-requests': 'พยายามเข้าสู่ระบบบ่อยเกินไป กรุณารอสักครู่',
+        'auth/invalid-credential': 'อีเมลหรือรหัสผ่านไม่ถูกต้อง',
+      };
+      setErr(msgs[e.code] || 'เข้าสู่ระบบไม่สำเร็จ: ' + e.message);
+    }
+    setLoading(false);
+  };
+
+  return (
+    <div className="login-screen">
+      <div className="login-card">
+        <div className="login-logo">
+          <div className="logo-icon">🏗️</div>
+          <h1>บจก.แม่ปิง 11</h1>
+          <p>ระบบอินเวนทอรีสต็อก — กรุณาเข้าสู่ระบบ</p>
+        </div>
+        <div className="login-field">
+          <label>อีเมล</label>
+          <input className="login-input" type="email" value={email} onChange={e=>setEmail(e.target.value)}
+            placeholder="employee@maeping11.com" autoComplete="email"
+            onKeyDown={e=>e.key==='Enter'&&document.getElementById('lp').focus()}/>
+        </div>
+        <div className="login-field">
+          <label>รหัสผ่าน</label>
+          <div style={{position:'relative'}}>
+            <input id="lp" className="login-input" type={showPass?'text':'password'} value={pass}
+              onChange={e=>setPass(e.target.value)} placeholder="••••••••" autoComplete="current-password"
+              onKeyDown={e=>e.key==='Enter'&&handleLogin()} style={{paddingRight:40}}/>
+            <button onClick={()=>setShowPass(s=>!s)} style={{position:'absolute',right:12,top:'50%',transform:'translateY(-50%)',background:'none',border:'none',cursor:'pointer',fontSize:16,color:'#a0aec0'}}>{showPass?'🙈':'👁️'}</button>
+          </div>
+        </div>
+        <button className="login-btn" onClick={handleLogin} disabled={loading||!email||!pass}>
+          {loading?'⏳ กำลังเข้าสู่ระบบ...':'🔐 เข้าสู่ระบบ'}
+        </button>
+        {err && <div className="login-err">⚠️ {err}</div>}
+        <div className="login-footer">ติดต่อผู้ดูแลระบบเพื่อขอสร้างบัญชี</div>
+      </div>
+    </div>
+  );
+}
+
+/* ── Users Management Page ── */
+function UsersPage({currentUser}) {
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showAdd, setShowAdd] = useState(false);
+  const [form, setForm] = useState({displayName:'',email:'',password:'',role:'employee'});
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState('');
+  const set = (k,v) => setForm(f=>({...f,[k]:v}));
+
+  useEffect(()=>{
+    const unsub = db.collection('users').orderBy('createdAt','desc').onSnapshot(snap=>{
+      setUsers(snap.docs.map(d=>({id:d.id,...d.data()})));
+      setLoading(false);
+    }, ()=>setLoading(false));
+    return unsub;
+  },[]);
+
+  const handleAddUser = async () => {
+    setErr(''); setSaving(true);
+    try {
+      // Create via Firebase REST API (Admin SDK not available in browser — use callable function trick)
+      // We'll use a secondary firebase app instance to create user without logging out
+      const secondary = firebase.initializeApp(firebase.app().options, 'secondary_' + Date.now());
+      const secAuth = secondary.auth();
+      const cred = await secAuth.createUserWithEmailAndPassword(form.email.trim(), form.password);
+      await cred.user.updateProfile({displayName: form.displayName});
+      // Save to Firestore
+      await db.collection('users').doc(cred.user.uid).set({
+        uid: cred.user.uid,
+        email: form.email.trim(),
+        displayName: form.displayName,
+        role: form.role,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+        createdBy: currentUser.uid,
+      });
+      await secAuth.signOut();
+      await secondary.delete();
+      setForm({displayName:'',email:'',password:'',role:'employee'});
+      setShowAdd(false);
+    } catch(e) {
+      const msgs = {
+        'auth/email-already-in-use':'อีเมลนี้มีในระบบแล้ว',
+        'auth/weak-password':'รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร',
+        'auth/invalid-email':'รูปแบบอีเมลไม่ถูกต้อง',
+      };
+      setErr(msgs[e.code]||e.message);
+    }
+    setSaving(false);
+  };
+
+  const handleDeleteUser = async (u) => {
+    if(u.uid===currentUser.uid){alert('ไม่สามารถลบบัญชีตัวเองได้');return;}
+    if(!window.confirm(`ลบบัญชี "${u.displayName||u.email}"?`))return;
+    await db.collection('users').doc(u.uid).delete();
+  };
+
+  const handleToggleRole = async (u) => {
+    if(u.uid===currentUser.uid){alert('ไม่สามารถเปลี่ยน role ตัวเองได้');return;}
+    const newRole = u.role==='admin'?'employee':'admin';
+    await db.collection('users').doc(u.uid).update({role:newRole});
+  };
+
+  const initials = name => name?name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2):'?';
+
+  return <div className="page">
+    <div style={{display:'flex',justifyContent:'flex-end',marginBottom:16}}>
+      <button className="btn btn-primary" onClick={()=>setShowAdd(s=>!s)}>
+        {showAdd?'✕ ยกเลิก':'➕ เพิ่มพนักงาน'}
+      </button>
+    </div>
+    {showAdd&&<div className="card" style={{marginBottom:16}}>
+      <div className="card-header"><h3>➕ สร้างบัญชีพนักงานใหม่</h3></div>
+      <div className="modal-body">
+        <div className="form-row">
+          <div className="form-group"><label className="form-label">ชื่อ-นามสกุล <span>*</span></label><input className="form-control" value={form.displayName} onChange={e=>set('displayName',e.target.value)} placeholder="สมชาย ใจดี"/></div>
+          <div className="form-group"><label className="form-label">Role</label>
+            <select className="form-control" value={form.role} onChange={e=>set('role',e.target.value)}>
+              <option value="employee">พนักงาน</option>
+              <option value="admin">แอดมิน</option>
+            </select></div>
+        </div>
+        <div className="form-row">
+          <div className="form-group"><label className="form-label">อีเมล <span>*</span></label><input className="form-control" type="email" value={form.email} onChange={e=>set('email',e.target.value)} placeholder="name@company.com"/></div>
+          <div className="form-group"><label className="form-label">รหัสผ่าน <span>*</span></label><input className="form-control" type="password" value={form.password} onChange={e=>set('password',e.target.value)} placeholder="อย่างน้อย 6 ตัวอักษร"/></div>
+        </div>
+        {err&&<div className="setup-err">⚠️ {err}</div>}
+        <div style={{display:'flex',gap:8,justifyContent:'flex-end',marginTop:8}}>
+          <button className="btn btn-outline" onClick={()=>setShowAdd(false)}>ยกเลิก</button>
+          <button className="btn btn-primary" disabled={saving||!form.email||!form.password||!form.displayName} onClick={handleAddUser}>
+            {saving?'⏳ กำลังสร้าง...':'✅ สร้างบัญชี'}
+          </button>
+        </div>
+      </div>
+    </div>}
+    <div className="card">
+      <div className="card-header"><h3>👥 รายชื่อพนักงาน ({users.length} คน)</h3></div>
+      {loading?<div className="empty-state"><div className="spinner" style={{margin:'0 auto'}}/></div>
+       :users.length===0?<div className="empty-state"><div className="ei">👤</div><p>ยังไม่มีพนักงาน</p></div>
+       :users.map(u=><div className="user-row" key={u.id}>
+          <div className="user-row-avatar">{initials(u.displayName||u.email)}</div>
+          <div className="user-row-info">
+            <h4>{u.displayName||'(ไม่มีชื่อ)'}</h4>
+            <p>{u.email}</p>
+          </div>
+          <div className="user-row-actions">
+            <span onClick={()=>handleToggleRole(u)} style={{cursor:u.uid===currentUser.uid?'default':'pointer'}} title="คลิกเพื่อเปลี่ยน role">
+              {u.role==='admin'?<span className="role-admin">ADMIN</span>:<span className="role-employee">พนักงาน</span>}
+            </span>
+            {u.uid!==currentUser.uid&&<button className="btn btn-danger btn-sm" onClick={()=>handleDeleteUser(u)}>🗑️</button>}
+            {u.uid===currentUser.uid&&<span className="badge badge-info" style={{fontSize:9}}>คุณ</span>}
+          </div>
+        </div>)}
+    </div>
+    <div className="card">
+      <div className="card-header"><h3>ℹ️ คำแนะนำ</h3></div>
+      <div style={{padding:'14px 18px',fontSize:13,color:'#4a5568',lineHeight:1.7}}>
+        <p>• <strong>Admin</strong> — เข้าถึงได้ทุกหน้า เพิ่ม/ลบสินค้า และจัดการพนักงาน</p>
+        <p>• <strong>พนักงาน</strong> — บันทึกรับของ/ส่งของ ดูรายงาน แต่ไม่สามารถเพิ่ม/ลบสินค้าหรือจัดการบัญชีได้</p>
+        <p>• คลิกที่ badge Role เพื่อสลับระหว่าง Admin / พนักงาน</p>
+      </div>
+    </div>
+  </div>;
+}
+
+/* ── StockBar / StockBadge ── */
+function StockBar({qty,minQty}) {
+  const max = Math.max(qty, minQty*3, 1), pct = Math.min(100,(qty/max)*100);
+  const c = qty===0?'danger':qty<=minQty*0.5?'danger':qty<=minQty?'warn':'safe';
+  const nc = c==='safe'?'#10b981':c==='warn'?'#f59e0b':'#ef4444';
+  return <div className="stock-bar-wrap">
+    <div className="stock-bar"><div className={`stock-bar-fill fill-${c}`} style={{width:pct+'%'}}/></div>
+    <span className="stock-num" style={{color:nc}}>{fmtNum(qty)}</span>
+  </div>;
+}
+function StockBadge({qty,minQty}) {
+  if(qty===0) return <span className="badge badge-danger">🔴 หมด</span>;
+  if(qty<=minQty*0.5) return <span className="badge badge-danger">⚠️ น้อยมาก</span>;
+  if(qty<=minQty) return <span className="badge badge-warning">⚡ ใกล้หมด</span>;
+  return <span className="badge badge-success">✅ ปกติ</span>;
+}
+
+/* ── Product Modal ── */
+function ProductModal({product, onClose, onSave}) {
+  const [form, setForm] = useState(product || {name:'',sku:'',category:'',unit:'',emoji:'📦',imageUrl:'',qty:0,minQty:10,reorderQty:20,costPrice:0,note:''});
+  const [saving, setSaving] = useState(false);
+  const set = (k,v) => setForm(f=>({...f,[k]:v}));
+  const CATS = ['ใบตัด/ใบเจียร์','ลวดเชื่อม','อะไหล่เครื่องเชื่อม','ดอกเจาะ','น้ำมัน/สี','อุปกรณ์ความปลอดภัย','สิ้นเปลือง','อุปกรณ์ทั่วไป'];
+  const EMOJIS = ['📦','⚙️','🔥','🔧','🔩','🦺','🛢️','🔨','⚡','🔌','🪛','🔑','🧰'];
+  return <div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
+    <div className="modal">
+      <div className="modal-header">
+        <h3>{product?'✏️ แก้ไขสินค้า':'➕ เพิ่มสินค้าใหม่'}</h3>
+        <button className="modal-close" onClick={onClose}>✕</button>
+      </div>
+      <div className="modal-body">
+        <div className="form-row">
+          <div className="form-group"><label className="form-label">ชื่อสินค้า <span>*</span></label><input className="form-control" value={form.name} onChange={e=>set('name',e.target.value)} placeholder="ชื่อสินค้า"/></div>
+          <div className="form-group"><label className="form-label">รหัส (SKU)</label><input className="form-control" value={form.sku} onChange={e=>set('sku',e.target.value)} placeholder="W0001"/></div>
+        </div>
+        <div className="form-row">
+          <div className="form-group"><label className="form-label">หมวดหมู่</label><input className="form-control" value={form.category} onChange={e=>set('category',e.target.value)} list="cats"/><datalist id="cats">{CATS.map(c=><option key={c} value={c}/>)}</datalist></div>
+          <div className="form-group"><label className="form-label">หน่วย</label><input className="form-control" value={form.unit} onChange={e=>set('unit',e.target.value)} placeholder="อัน/ชิ้น/ใบ" list="units"/><datalist id="units">{['อัน','ชิ้น','ใบ','ตัว','ม้วน','กล่อง','ชุด','kg','เส้น','คู่','แผ่น','หลอด','เซ็ต'].map(u=><option key={u} value={u}/>)}</datalist></div>
+        </div>
+        <div className="form-group">
+          <label className="form-label">ไอคอน</label>
+          <div style={{display:'flex',flexWrap:'wrap',gap:5,marginTop:4}}>
+            {EMOJIS.map(e=><button key={e} onClick={()=>set('emoji',e)} style={{fontSize:18,padding:'3px 5px',borderRadius:5,border:`2px solid ${form.emoji===e?'#3b82f6':'transparent'}`,background:form.emoji===e?'#eff6ff':'#f7fafc',cursor:'pointer'}}>{e}</button>)}
+          </div>
+        </div>
+        <div className="form-group"><label className="form-label">URL รูปภาพ</label><input className="form-control" value={form.imageUrl} onChange={e=>set('imageUrl',e.target.value)} placeholder="https://..."/></div>
+        <div className="form-row">
+          <div className="form-group"><label className="form-label">จำนวนปัจจุบัน</label><input type="number" min="0" className="form-control" value={form.qty} onChange={e=>set('qty',+e.target.value)}/></div>
+          <div className="form-group"><label className="form-label">ราคาทุน (บาท)</label><input type="number" min="0" className="form-control" value={form.costPrice} onChange={e=>set('costPrice',+e.target.value)}/></div>
+        </div>
+        <div className="form-row">
+          <div className="form-group"><label className="form-label">จำนวนขั้นต่ำ</label><input type="number" min="0" className="form-control" value={form.minQty} onChange={e=>set('minQty',+e.target.value)}/></div>
+          <div className="form-group"><label className="form-label">จำนวนสั่งซื้อ</label><input type="number" min="0" className="form-control" value={form.reorderQty} onChange={e=>set('reorderQty',+e.target.value)}/></div>
+        </div>
+        <div className="form-group"><label className="form-label">หมายเหตุ</label><textarea className="form-control" rows={2} value={form.note} onChange={e=>set('note',e.target.value)}/></div>
+      </div>
+      <div className="modal-footer">
+        <button className="btn btn-outline" onClick={onClose}>ยกเลิก</button>
+        <button className="btn btn-primary" disabled={saving} onClick={async()=>{
+          if(!form.name){alert('กรุณากรอกชื่อสินค้า');return;}
+          setSaving(true); await onSave(form); setSaving(false);
+        }}>{saving?'⏳ กำลังบันทึก...':'💾 บันทึก'}</button>
+      </div>
+    </div>
+  </div>;
+}
+
+/* ── Transaction Modal ── */
+function TxModal({type, products, onClose, onSave, currentUser}) {
+  const defaultBy = currentUser?.displayName || currentUser?.email?.split('@')[0] || '';
+  const [form, setForm] = useState({productId:'',qty:1,ref:'',note:'',date:todayStr(),by:defaultBy});
+  const [saving, setSaving] = useState(false);
+  const set = (k,v) => setForm(f=>({...f,[k]:v}));
+  const prod = products.find(p=>p.id===form.productId);
+  const isOut = type==='out';
+  return <div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
+    <div className="modal">
+      <div className="modal-header">
+        <h3>{isOut?'📤 บันทึกส่งของออก':'📥 บันทึกรับของเข้า'}</h3>
+        <button className="modal-close" onClick={onClose}>✕</button>
+      </div>
+      <div className="modal-body">
+        <div className="form-group">
+          <label className="form-label">สินค้า <span>*</span></label>
+          <select className="form-control" value={form.productId} onChange={e=>set('productId',e.target.value)}>
+            <option value="">-- เลือกสินค้า --</option>
+            {products.map(p=><option key={p.id} value={p.id}>{p.emoji} {p.name} (คงเหลือ: {fmtNum(p.qty)} {p.unit})</option>)}
+          </select>
+        </div>
+        {prod && <div className="alert alert-warning"><span>ℹ️</span><div>คงเหลือ: <strong>{fmtNum(prod.qty)} {prod.unit}</strong>{isOut&&prod.qty<form.qty&&<span style={{color:'#ef4444'}}> ⚠️ ไม่พอ!</span>}</div></div>}
+        <div className="form-row">
+          <div className="form-group"><label className="form-label">จำนวน <span>*</span></label><input type="number" min="1" className="form-control" value={form.qty} onChange={e=>set('qty',+e.target.value)}/>{prod&&<p className="form-hint">หน่วย: {prod.unit}</p>}</div>
+          <div className="form-group"><label className="form-label">วันที่</label><input type="date" className="form-control" value={form.date} onChange={e=>set('date',e.target.value)}/></div>
+        </div>
+        <div className="form-row">
+          <div className="form-group"><label className="form-label">{isOut?'เลขที่ใบส่งของ':'เลขที่ใบสั่งซื้อ'}</label><input className="form-control" value={form.ref} onChange={e=>set('ref',e.target.value)} placeholder={isOut?'SO-XXX':'PO-XXX'}/></div>
+          <div className="form-group"><label className="form-label">ผู้ดำเนินการ</label><input className="form-control" value={form.by} onChange={e=>set('by',e.target.value)} placeholder="ชื่อพนักงาน"/></div>
+        </div>
+        <div className="form-group"><label className="form-label">หมายเหตุ</label><textarea className="form-control" rows={2} value={form.note} onChange={e=>set('note',e.target.value)}/></div>
+      </div>
+      <div className="modal-footer">
+        <button className="btn btn-outline" onClick={onClose}>ยกเลิก</button>
+        <button className={`btn ${isOut?'btn-danger':'btn-success'}`} disabled={saving} onClick={async()=>{
+          if(!form.productId){alert('กรุณาเลือกสินค้า');return;}
+          if(!form.qty||form.qty<=0){alert('กรุณากรอกจำนวน');return;}
+          if(isOut&&prod&&prod.qty<form.qty){if(!window.confirm('สต็อกไม่พอ บันทึกต่อหรือไม่?'))return;}
+          setSaving(true); await onSave(form); setSaving(false);
+        }}>{saving?'⏳ ...':(isOut?'📤 บันทึกส่งออก':'📥 บันทึกรับเข้า')}</button>
+      </div>
+    </div>
+  </div>;
+}
+
+/* ── Dashboard ── */
+function Dashboard({products, transactions}) {
+  const chartRef=useRef(), pieRef=useRef(), ci=useRef(), pi=useRef();
+  const lowStock = products.filter(p=>p.minQty>0&&p.qty<=p.minQty);
+  const recentTx = [...transactions].sort((a,b)=>new Date(b.createdAt||b.date)-new Date(a.createdAt||a.date)).slice(0,6);
+  const catMap={};
+  products.forEach(p=>{catMap[p.category]=(catMap[p.category]||0)+1;});
+  const COLORS=['#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#ec4899','#f97316'];
+  const days=Array.from({length:7},(_,i)=>{const d=new Date();d.setDate(d.getDate()-6+i);return d.toISOString().slice(0,10);});
+  const txIn={},txOut={};
+  transactions.forEach(t=>{const d=(t.date||'').slice(0,10);if(t.type==='in'){txIn[d]=(txIn[d]||0)+t.qty;}else{txOut[d]=(txOut[d]||0)+t.qty;}});
+
+  useEffect(()=>{
+    if(!chartRef.current)return;
+    if(ci.current)ci.current.destroy();
+    ci.current=new Chart(chartRef.current,{type:'bar',data:{labels:days.map(d=>new Date(d).toLocaleDateString('th-TH',{day:'2-digit',month:'short'})),datasets:[{label:'รับเข้า',data:days.map(d=>txIn[d]||0),backgroundColor:'rgba(16,185,129,.7)',borderRadius:3},{label:'ส่งออก',data:days.map(d=>txOut[d]||0),backgroundColor:'rgba(239,68,68,.7)',borderRadius:3}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{font:{family:'Sarabun',size:11}}}},scales:{x:{grid:{display:false},ticks:{font:{family:'Sarabun',size:10}}},y:{ticks:{font:{family:'Sarabun',size:10}}}}}});
+    return()=>{if(ci.current)ci.current.destroy();};
+  },[transactions.length]);
+
+  useEffect(()=>{
+    if(!pieRef.current)return;
+    if(pi.current)pi.current.destroy();
+    const cats=Object.keys(catMap);
+    if(!cats.length)return;
+    pi.current=new Chart(pieRef.current,{type:'doughnut',data:{labels:cats,datasets:[{data:cats.map(c=>catMap[c]),backgroundColor:COLORS,borderWidth:2}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{family:'Sarabun',size:10},padding:6}}}}});
+    return()=>{if(pi.current)pi.current.destroy();};
+  },[products.length]);
+
+  return <div className="page">
+    {lowStock.length>0&&<div className="alert alert-danger"><span>🔔</span><div>มี <strong>{lowStock.length} รายการ</strong> สต็อกต่ำกว่าจุดสั่งซื้อ</div></div>}
+    <div className="stat-grid">
+      <div className="stat-card stat-blue"><div className="stat-header"><div><div className="stat-label">สินค้าทั้งหมด</div><div className="stat-value">{products.length}</div><div className="stat-sub">รายการ</div></div><div className="stat-icon">📦</div></div></div>
+      <div className="stat-card stat-red"><div className="stat-header"><div><div className="stat-label">ต้องสั่งซื้อ</div><div className="stat-value">{lowStock.length}</div><div className="stat-sub">รายการ</div></div><div className="stat-icon">⚠️</div></div></div>
+      <div className="stat-card stat-green"><div className="stat-header"><div><div className="stat-label">สต็อกปกติ</div><div className="stat-value">{products.filter(p=>p.minQty===0||p.qty>p.minQty).length}</div><div className="stat-sub">รายการ</div></div><div className="stat-icon">✅</div></div></div>
+      <div className="stat-card stat-yellow"><div className="stat-header"><div><div className="stat-label">การเคลื่อนไหว</div><div className="stat-value">{transactions.length}</div><div className="stat-sub">รายการ</div></div><div className="stat-icon">📊</div></div></div>
+    </div>
+    <div className="charts-grid">
+      <div className="card"><div className="card-header"><h3>📈 การเคลื่อนไหว 7 วัน</h3></div><div className="chart-wrap"><canvas ref={chartRef}/></div></div>
+      <div className="card"><div className="card-header"><h3>🗂️ หมวดหมู่</h3></div><div className="chart-wrap"><canvas ref={pieRef}/></div></div>
+    </div>
+    <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14}}>
+      <div className="card">
+        <div className="card-header"><h3>⚠️ ต้องสั่งซื้อ</h3><span className="badge badge-danger">{lowStock.length}</span></div>
+        {lowStock.length===0
+          ?<div className="empty-state"><div className="ei">✅</div><p>ทุกรายการปกติ</p></div>
+          :lowStock.slice(0,6).map(p=><div className="reorder-item" key={p.id}>
+            <div style={{fontSize:22}}>{p.emoji}</div>
+            <div className="ri-info"><h4>{p.name}</h4><p>คงเหลือ {fmtNum(p.qty)} / ขั้นต่ำ {fmtNum(p.minQty)} {p.unit}</p></div>
+            <div className="ri-qty"><div className="qn">{fmtNum(p.reorderQty)}</div><div className="ql">{p.unit}</div></div>
+          </div>)}
+      </div>
+      <div className="card">
+        <div className="card-header"><h3>🕐 เคลื่อนไหวล่าสุด</h3></div>
+        {recentTx.length===0
+          ?<div className="empty-state"><div className="ei">📋</div><p>ยังไม่มีรายการ</p></div>
+          :recentTx.map(t=><div key={t.id} style={{display:'flex',alignItems:'center',gap:8,padding:'9px 14px',borderBottom:'1px solid #f0f4f8'}}>
+            <span style={{fontSize:18}}>{t.type==='in'?'📥':'📤'}</span>
+            <div style={{flex:1,minWidth:0}}><div style={{fontSize:12,fontWeight:600,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{t.productName}</div><div style={{fontSize:10,color:'#a0aec0'}}>{fmtDate(t.date)}{t.by?' · '+t.by:''}</div></div>
+            <span className={t.type==='in'?'tx-in':'tx-out'}>{t.type==='in'?'+':'-'}{fmtNum(t.qty)}</span>
+          </div>)}
+      </div>
+    </div>
+  </div>;
+}
+
+/* ── Products Page ── */
+function ProductsPage({products, onAdd, onEdit, onDelete}) {
+  const [search, setSearch] = useState('');
+  const [catFilter, setCatFilter] = useState('');
+  const [modal, setModal] = useState(null);
+  const cats = [...new Set(products.map(p=>p.category))].filter(Boolean).sort();
+  const filtered = products.filter(p=>{
+    const q=search.toLowerCase();
+    return(!q||p.name.toLowerCase().includes(q)||p.sku.toLowerCase().includes(q))&&(!catFilter||p.category===catFilter);
+  });
+  const ProdIcon=({p,size=40})=><div className="prod-img" style={{width:size,height:size,fontSize:size*0.45}}>
+    {p.imageUrl?<img src={p.imageUrl} alt="" onError={e=>{e.target.style.display='none';}}/>:p.emoji}
+  </div>;
+  return <div className="page">
+    <div className="search-bar">
+      <div className="search-wrap"><span className="search-icon">🔍</span><input className="search-input" placeholder="ค้นหาสินค้า/รหัส..." value={search} onChange={e=>setSearch(e.target.value)}/></div>
+      <select className="sel" style={{maxWidth:160}} value={catFilter} onChange={e=>setCatFilter(e.target.value)}>
+        <option value="">ทุกหมวดหมู่</option>
+        {cats.map(c=><option key={c} value={c}>{c}</option>)}
+      </select>
+      <div style={{marginLeft:'auto'}}><button className="btn btn-primary" onClick={()=>setModal('add')}>➕ <span>เพิ่มสินค้า</span></button></div>
+    </div>
+    {/* Desktop table */}
+    <div className="card mobile-hide">
+      <div className="card-header"><h3>📦 รายการสินค้า ({filtered.length})</h3></div>
+      <div className="table-wrap">
+        <table>
+          <thead><tr><th>สินค้า</th><th>หมวดหมู่</th><th>คงเหลือ</th><th>ขั้นต่ำ</th><th>สั่งซื้อ</th><th>สถานะ</th><th style={{textAlign:'center'}}>จัดการ</th></tr></thead>
+          <tbody>
+            {filtered.length===0?<tr><td colSpan={7} style={{textAlign:'center',padding:36,color:'#a0aec0'}}>ไม่พบสินค้า</td></tr>
+              :filtered.map(p=><tr key={p.id}>
+                <td><div className="prod-info"><ProdIcon p={p}/><div><div className="prod-name">{p.name}</div><div className="prod-sku">{p.sku}</div></div></div></td>
+                <td><span className="badge badge-info">{p.category||'—'}</span></td>
+                <td><StockBar qty={p.qty} minQty={p.minQty}/><span style={{fontSize:10,color:'#a0aec0'}}>{p.unit}</span></td>
+                <td style={{fontSize:12}}>{fmtNum(p.minQty)} {p.unit}</td>
+                <td style={{fontSize:12,fontWeight:700,color:'#3b82f6'}}>{fmtNum(p.reorderQty)} {p.unit}</td>
+                <td><StockBadge qty={p.qty} minQty={p.minQty}/></td>
+                <td><div style={{display:'flex',gap:5,justifyContent:'center'}}>
+                  <button className="btn btn-outline btn-sm" onClick={()=>setModal(p)}>✏️</button>
+                  <button className="btn btn-danger btn-sm" onClick={()=>{if(window.confirm(`ลบ "${p.name}"?`))onDelete(p.id);}}>🗑️</button>
+                </div></td>
+              </tr>)}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {/* Mobile cards */}
+    <div className="prod-cards-grid mobile-show" style={{display:'none'}}>
+      {filtered.map(p=>{
+        const c=p.qty===0?'#ef4444':p.qty<=p.minQty?'#f59e0b':'#10b981';
+        return <div className="prod-card" key={p.id} onClick={()=>setModal(p)}>
+          <div className="prod-card-top">
+            <div className="prod-card-icon">{p.imageUrl?<img src={p.imageUrl} alt="" onError={e=>{e.target.style.display='none';}}/>:p.emoji}</div>
+            <div style={{flex:1,minWidth:0}}><div className="prod-card-name">{p.name}</div><div className="prod-card-sku">{p.sku}</div></div>
+          </div>
+          <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-end'}}>
+            <div><div className="prod-card-qty" style={{color:c}}>{fmtNum(p.qty)}</div><div className="prod-card-unit">{p.unit}</div></div>
+            <StockBadge qty={p.qty} minQty={p.minQty}/>
+          </div>
+          <div style={{marginTop:6}}><StockBar qty={p.qty} minQty={p.minQty}/></div>
+        </div>;
+      })}
+    </div>
+    {(modal==='add'||modal?.id)&&<ProductModal product={modal==='add'?null:modal} onClose={()=>setModal(null)} onSave={async data=>{modal==='add'?await onAdd(data):await onEdit(data);setModal(null);}}/>}
+  </div>;
+}
+
+/* ── Transactions Page ── */
+function TransactionsPage({products, transactions, onAdd, currentUser}) {
+  const [txModal, setTxModal] = useState(null);
+  const [search, setSearch] = useState('');
+  const [typeFilter, setTypeFilter] = useState('');
+  const filtered = [...transactions].filter(t=>{
+    const q=search.toLowerCase();
+    return(!q||t.productName.toLowerCase().includes(q)||(t.ref||'').toLowerCase().includes(q))&&(!typeFilter||t.type===typeFilter);
+  }).sort((a,b)=>new Date(b.createdAt||b.date)-new Date(a.createdAt||a.date));
+  return <div className="page">
+    <div className="search-bar">
+      <div className="search-wrap"><span className="search-icon">🔍</span><input className="search-input" placeholder="ค้นหา..." value={search} onChange={e=>setSearch(e.target.value)}/></div>
+      <select className="sel" style={{maxWidth:140}} value={typeFilter} onChange={e=>setTypeFilter(e.target.value)}>
+        <option value="">ทุกประเภท</option><option value="in">รับเข้า</option><option value="out">ส่งออก</option>
+      </select>
+      <div style={{marginLeft:'auto',display:'flex',gap:8}}>
+        <button className="btn btn-success" onClick={()=>setTxModal('in')}>📥 <span>รับเข้า</span></button>
+        <button className="btn btn-danger" onClick={()=>setTxModal('out')}>📤 <span>ส่งออก</span></button>
+      </div>
+    </div>
+    <div className="card">
+      <div className="card-header"><h3>📋 ประวัติการเคลื่อนไหว ({filtered.length})</h3></div>
+      <div className="table-wrap">
+        <table>
+          <thead><tr><th>ประเภท</th><th>สินค้า</th><th>จำนวน</th><th>อ้างอิง</th><th>วันที่</th><th>โดย</th></tr></thead>
+          <tbody>
+            {filtered.length===0?<tr><td colSpan={6} style={{textAlign:'center',padding:36,color:'#a0aec0'}}>ไม่พบรายการ</td></tr>
+              :filtered.map(t=>{
+                const prod=products.find(p=>p.id===t.productId);
+                return <tr key={t.id}>
+                  <td><span className={`badge ${t.type==='in'?'badge-success':'badge-danger'}`}>{t.type==='in'?'📥 รับ':'📤 ส่ง'}</span></td>
+                  <td><div className="prod-info">
+                    <div className="prod-img" style={{width:30,height:30,fontSize:14}}>{prod?.imageUrl?<img src={prod.imageUrl} alt="" style={{width:'100%',height:'100%',objectFit:'cover',borderRadius:6}} onError={e=>{e.target.style.display='none';}}/>:(prod?.emoji||'📦')}</div>
+                    <span style={{fontWeight:600,fontSize:12}}>{t.productName}</span>
+                  </div></td>
+                  <td><span className={t.type==='in'?'tx-in':'tx-out'}>{t.type==='in'?'+':'-'}{fmtNum(t.qty)} {prod?.unit||''}</span></td>
+                  <td style={{fontSize:11,color:'#718096',fontFamily:'monospace'}}>{t.ref||'—'}</td>
+                  <td style={{fontSize:11,color:'#718096',whiteSpace:'nowrap'}}>{fmtDate(t.date)}</td>
+                  <td style={{fontSize:12}}>{t.by||'—'}</td>
+                </tr>;
+              })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {txModal&&<TxModal type={txModal} products={products} currentUser={currentUser} onClose={()=>setTxModal(null)} onSave={async data=>{await onAdd(txModal,data);setTxModal(null);}}/>}
+  </div>;
+}
+
+/* ── Reports ── */
+function ReportsPage({products, transactions}) {
+  const lowStock = products.filter(p=>p.minQty>0&&p.qty<=p.minQty).sort((a,b)=>a.qty/Math.max(a.minQty,1)-b.qty/Math.max(b.minQty,1));
+  const catSummary={};
+  products.forEach(p=>{if(!catSummary[p.category])catSummary[p.category]={count:0};catSummary[p.category].count++;});
+  return <div className="page">
+    <div className="stat-grid" style={{gridTemplateColumns:'repeat(3,1fr)'}}>
+      <div className="stat-card stat-red"><div className="stat-header"><div><div className="stat-label">ต้องสั่งซื้อ</div><div className="stat-value">{lowStock.length}</div><div className="stat-sub">รายการ</div></div><div className="stat-icon">🛒</div></div></div>
+      <div className="stat-card stat-green"><div className="stat-header"><div><div className="stat-label">สต็อกปกติ</div><div className="stat-value">{products.filter(p=>p.minQty===0||p.qty>p.minQty).length}</div><div className="stat-sub">รายการ</div></div><div className="stat-icon">✅</div></div></div>
+      <div className="stat-card stat-blue"><div className="stat-header"><div><div className="stat-label">หมวดหมู่</div><div className="stat-value">{Object.keys(catSummary).length}</div><div className="stat-sub">หมวด</div></div><div className="stat-icon">🗂️</div></div></div>
+    </div>
+    <div className="card">
+      <div className="card-header"><h3>🛒 รายการสั่งซื้อที่แนะนำ</h3><button className="btn btn-outline btn-sm" onClick={()=>window.print()}>🖨️ พิมพ์</button></div>
+      {lowStock.length===0?<div className="empty-state"><div className="ei">✅</div><p>ไม่มีสินค้าที่ต้องสั่งซื้อ</p></div>
+        :<div className="table-wrap"><table>
+          <thead><tr><th>สินค้า</th><th>หมวดหมู่</th><th>คงเหลือ</th><th>ขั้นต่ำ</th><th>แนะนำสั่ง</th><th>สถานะ</th></tr></thead>
+          <tbody>{lowStock.map(p=><tr key={p.id}>
+            <td><div className="prod-info"><span style={{fontSize:18}}>{p.emoji}</span><div><div style={{fontWeight:600,fontSize:12}}>{p.name}</div><div style={{fontSize:10,color:'#a0aec0'}}>{p.sku}</div></div></div></td>
+            <td><span className="badge badge-info">{p.category||'—'}</span></td>
+            <td style={{color:'#ef4444',fontWeight:700}}>{fmtNum(p.qty)} {p.unit}</td>
+            <td style={{fontSize:12}}>{fmtNum(p.minQty)} {p.unit}</td>
+            <td style={{color:'#3b82f6',fontWeight:700}}>{fmtNum(p.reorderQty)} {p.unit}</td>
+            <td><StockBadge qty={p.qty} minQty={p.minQty}/></td>
+          </tr>)}</tbody>
+        </table></div>}
+    </div>
+    <div className="card">
+      <div className="card-header"><h3>📦 สต็อกทั้งหมด ({products.length} รายการ)</h3></div>
+      <div className="table-wrap"><table>
+        <thead><tr><th>สินค้า</th><th>หมวดหมู่</th><th>คงเหลือ</th><th>ขั้นต่ำ</th><th>สถานะ</th></tr></thead>
+        <tbody>{[...products].sort((a,b)=>a.qty/Math.max(a.minQty,1)-b.qty/Math.max(b.minQty,1)).map(p=><tr key={p.id}>
+          <td><div className="prod-info"><span style={{fontSize:18}}>{p.emoji}</span><div><div style={{fontWeight:600,fontSize:12}}>{p.name}</div><div style={{fontSize:10,color:'#a0aec0'}}>{p.sku}</div></div></div></td>
+          <td><span className="badge badge-gray">{p.category||'—'}</span></td>
+          <td><StockBar qty={p.qty} minQty={p.minQty}/><span style={{fontSize:10,color:'#a0aec0'}}>{p.unit}</span></td>
+          <td style={{fontSize:12}}>{fmtNum(p.minQty)} {p.unit}</td>
+          <td><StockBadge qty={p.qty} minQty={p.minQty}/></td>
+        </tr>)}</tbody>
+      </table></div>
+    </div>
+  </div>;
+}
+
+/* ══════════════════════════════════════════
+   MAIN APP — Firebase Auth + Firestore
+══════════════════════════════════════════ */
+function App() {
+  const [screen, setScreen] = useState(getStoredConfig() ? 'auth_check' : 'setup');
+  const [page, setPage] = useState('dashboard');
+  const [sideOpen, setSideOpen] = useState(false);
+  const [products, setProducts] = useState([]);
+  const [transactions, setTransactions] = useState([]);
+  const [synced, setSynced] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);  // Firebase Auth user
+  const [userRole, setUserRole] = useState(null);         // 'admin' | 'employee'
+  const [showLogoutMenu, setShowLogoutMenu] = useState(false);
+
+  // ── Watch Firebase Auth state ──
+  useEffect(() => {
+    if (screen === 'setup') return;
+    const unsub = auth.onAuthStateChanged(async firebaseUser => {
+      if (firebaseUser) {
+        // Load role from Firestore
+        try {
+          const doc = await db.collection('users').doc(firebaseUser.uid).get();
+          if (doc.exists) {
+            setUserRole(doc.data().role || 'employee');
+          } else {
+            // First ever user → auto-create as admin
+            const allUsers = await db.collection('users').limit(1).get();
+            const role = allUsers.empty ? 'admin' : 'employee';
+            await db.collection('users').doc(firebaseUser.uid).set({
+              uid: firebaseUser.uid,
+              email: firebaseUser.email,
+              displayName: firebaseUser.displayName || firebaseUser.email.split('@')[0],
+              role,
+              createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+            });
+            setUserRole(role);
+          }
+        } catch(e) { setUserRole('employee'); }
+        setCurrentUser(firebaseUser);
+        setScreen('loading');
+      } else {
+        setCurrentUser(null);
+        setUserRole(null);
+        if (screen !== 'setup') setScreen('login');
+      }
+    });
+    return unsub;
+  }, [screen === 'setup']);
+
+  // ── Firestore real-time listeners ──
+  useEffect(() => {
+    if (screen !== 'app') return;
+    const unsubP = db.collection('products').onSnapshot(snap => {
+      const data = snap.docs.map(d => ({id: d.id, ...d.data()}));
+      setProducts(data.sort((a,b)=>a.sku?.localeCompare(b.sku)));
+      setSynced(true);
+    }, err => console.error('products:', err));
+
+    const unsubT = db.collection('transactions')
+      .orderBy('createdAt', 'desc').limit(300)
+      .onSnapshot(snap => {
+        setTransactions(snap.docs.map(d => ({id: d.id, ...d.data()})));
+      }, err => console.error('transactions:', err));
+
+    return () => { unsubP(); unsubT(); };
+  }, [screen]);
+
+  // ── Seed products on first load ──
+  const seedIfEmpty = useCallback(async () => {
+    const snap = await db.collection('products').limit(1).get();
+    if (snap.empty) {
+      const batch = db.batch();
+      SEED_PRODUCTS.forEach(p => { batch.set(db.collection('products').doc(p.id), p); });
+      await batch.commit();
+    }
+    setScreen('app');
+  }, []);
+
+  useEffect(() => {
+    if (screen === 'loading') seedIfEmpty();
+  }, [screen, seedIfEmpty]);
+
+  // ── CRUD ──
+  const isAdmin = userRole === 'admin';
+  const addProduct = async (data) => {
+    if (!isAdmin) return alert('เฉพาะ Admin เท่านั้น');
+    const id = data.sku || 'P' + Date.now();
+    await db.collection('products').doc(id).set({...data, id, createdAt: firebase.firestore.FieldValue.serverTimestamp()});
+  };
+  const editProduct = async (data) => {
+    if (!isAdmin) return alert('เฉพาะ Admin เท่านั้น');
+    await db.collection('products').doc(data.id).update(data);
+  };
+  const deleteProduct = async (id) => {
+    if (!isAdmin) return alert('เฉพาะ Admin เท่านั้น');
+    await db.collection('products').doc(id).delete();
+  };
+  const addTx = async (type, data) => {
+    const prod = products.find(p => p.id === data.productId);
+    if (!prod) return;
+    const batch = db.batch();
+    const txRef = db.collection('transactions').doc();
+    const byName = data.by || currentUser?.displayName || currentUser?.email || '';
+    batch.set(txRef, {
+      type, productId: data.productId, productName: prod.name,
+      qty: data.qty, ref: data.ref || '', note: data.note || '',
+      date: data.date || todayStr(), by: byName,
+      uid: currentUser?.uid || '',
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    const newQty = type === 'in' ? prod.qty + data.qty : prod.qty - data.qty;
+    batch.update(db.collection('products').doc(prod.id), {qty: newQty});
+    await batch.commit();
+  };
+
+  const handleLogout = async () => {
+    setShowLogoutMenu(false);
+    await auth.signOut();
+    setScreen('login');
+  };
+
+  const handleResetConfig = () => {
+    setShowLogoutMenu(false);
+    if(window.confirm('ล้าง Firebase Config และออกจากระบบ?')) {
+      auth.signOut();
+      localStorage.removeItem('mp11_fb_config');
+      window.location.reload();
+    }
+  };
+
+  const lowN = products.filter(p=>p.minQty>0&&p.qty<=p.minQty).length;
+  const nav = id => { setPage(id); setSideOpen(false); };
+
+  const PAGES = [
+    {id:'dashboard',label:'แดชบอร์ด',icon:'📊',sec:'หลัก',adminOnly:false},
+    {id:'products',label:'สินค้า',icon:'📦',sec:'จัดการ',adminOnly:false},
+    {id:'transactions',label:'รับ/ส่งของ',icon:'🔄',sec:'จัดการ',adminOnly:false},
+    {id:'reports',label:'รายงาน',icon:'📈',sec:'รายงาน',adminOnly:false},
+    {id:'users',label:'พนักงาน',icon:'👥',sec:'แอดมิน',adminOnly:true},
+  ];
+  const visiblePages = PAGES.filter(p => !p.adminOnly || isAdmin);
+  const titles = {dashboard:'แดชบอร์ด',products:'จัดการสินค้า',transactions:'รับ/ส่งของ',reports:'รายงานสต็อก',users:'จัดการพนักงาน'};
+  const now = new Date().toLocaleDateString('th-TH',{day:'2-digit',month:'short',year:'numeric'});
+  const userName = currentUser?.displayName || currentUser?.email?.split('@')[0] || '';
+  const initials = s => s?s.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2):'?';
+
+  // ── Screens ──
+  if (screen === 'setup') return <SetupScreen onConnect={() => setScreen('auth_check')}/>;
+  if (screen === 'auth_check' || screen === 'login') return <LoginScreen onLogin={()=>{}} />;
+  if (screen === 'loading') return <div className="loading-screen">
+    <div className="spinner"/>
+    <div className="loading-text">🔥 กำลังโหลดข้อมูล...</div>
+  </div>;
+
+  // ── Main App ──
+  return <>
+    <div className={`sidebar-overlay ${sideOpen?'show':''}`} onClick={()=>setSideOpen(false)}/>
+    <div className={`sidebar ${sideOpen?'open':''}`}>
+      <div className="sidebar-logo"><div className="logo-icon">🏗️</div><h1>บจก.แม่ปิง 11</h1><p>ระบบอินเวนทอรี</p></div>
+      {[...new Set(visiblePages.map(p=>p.sec))].map(sec=><div className="nav-section" key={sec}>
+        <div className="nav-label">{sec}</div>
+        {visiblePages.filter(p=>p.sec===sec).map(p=><div key={p.id} className={`nav-item ${page===p.id?'active':''}`} onClick={()=>nav(p.id)}>
+          <span className="icon">{p.icon}</span>{p.label}
+          {p.id==='reports'&&lowN>0&&<span className="nav-badge">{lowN}</span>}
+        </div>)}
+      </div>)}
+      <div className="sidebar-footer">
+        <span className="sync-dot"/>
+        {synced?'ซิงค์ real-time · ':'กำลังโหลด · '}{products.length} รายการ
+        <br/>
+        <span style={{color:'rgba(255,255,255,.5)',fontSize:10}}>{userName} · {isAdmin?'Admin':'พนักงาน'}</span>
+        <br/>
+        <button style={{background:'none',border:'none',color:'rgba(255,255,255,.4)',fontSize:10,cursor:'pointer',marginTop:4}} onClick={handleLogout}>🚪 ออกจากระบบ</button>
+      </div>
+    </div>
+    <div className="main" onClick={()=>showLogoutMenu&&setShowLogoutMenu(false)}>
+      <div className="topbar">
+        <div className="topbar-left">
+          <button className="hamburger" onClick={()=>setSideOpen(s=>!s)}>☰</button>
+          <h2>{titles[page]}</h2>
+        </div>
+        <div className="topbar-right">
+          {lowN>0&&<span className="badge badge-danger">🔔 {lowN}</span>}
+          <span className="topbar-date mobile-hide">📅 {now}</span>
+          <div style={{position:'relative'}}>
+            <button className="user-badge" onClick={e=>{e.stopPropagation();setShowLogoutMenu(s=>!s);}}>
+              <div className="user-avatar">{initials(userName)}</div>
+              <span className="mobile-hide">{userName}</span>
+              {isAdmin?<span className="role-admin">ADMIN</span>:<span className="role-employee">พนักงาน</span>}
+            </button>
+            {showLogoutMenu&&<div style={{position:'absolute',right:0,top:'110%',background:'#fff',border:'1px solid #e2e8f0',borderRadius:10,boxShadow:'0 8px 24px rgba(0,0,0,.12)',padding:'8px',minWidth:180,zIndex:300}} onClick={e=>e.stopPropagation()}>
+              <div style={{padding:'8px 12px',fontSize:12,color:'#718096',borderBottom:'1px solid #f0f4f8',marginBottom:4}}>
+                <strong style={{color:'#1a202c'}}>{userName}</strong><br/>{currentUser?.email}
+              </div>
+              <button style={{width:'100%',padding:'8px 12px',background:'none',border:'none',cursor:'pointer',textAlign:'left',fontSize:12,color:'#374151',borderRadius:6,display:'flex',gap:8,alignItems:'center'}} onClick={handleLogout}>🚪 ออกจากระบบ</button>
+              {isAdmin&&<button style={{width:'100%',padding:'8px 12px',background:'none',border:'none',cursor:'pointer',textAlign:'left',fontSize:12,color:'#ef4444',borderRadius:6,display:'flex',gap:8,alignItems:'center'}} onClick={handleResetConfig}>⚙️ รีเซ็ต Firebase Config</button>}
+            </div>}
+          </div>
+        </div>
+      </div>
+      {page==='dashboard'&&<Dashboard products={products} transactions={transactions}/>}
+      {page==='products'&&<ProductsPage products={products} onAdd={addProduct} onEdit={editProduct} onDelete={isAdmin?deleteProduct:null}/>}
+      {page==='transactions'&&<TransactionsPage products={products} transactions={transactions} onAdd={addTx} currentUser={currentUser}/>}
+      {page==='reports'&&<ReportsPage products={products} transactions={transactions}/>}
+      {page==='users'&&isAdmin&&<UsersPage currentUser={currentUser}/>}
+    </div>
+    <div className="bottom-nav">
+      <div className="bottom-nav-inner">
+        {visiblePages.filter(p=>!p.adminOnly||isAdmin).slice(0,5).map(p=><div key={p.id} className={`bn-item ${page===p.id?'active':''}`} onClick={()=>nav(p.id)}>
+          <div className="bn-icon">{p.icon}{p.id==='reports'&&lowN>0&&<span className="bn-badge">{lowN}</span>}</div>
+          <div className="bn-label">{p.label}</div>
+        </div>)}
+      </div>
+    </div>
+  </>;
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>
