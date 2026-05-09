@@ -11,6 +11,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
 
 <!-- React + Babel -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
@@ -298,6 +299,7 @@ let auth = null;
 firebase.initializeApp(FIREBASE_CONFIG);
 db = firebase.firestore();
 auth = firebase.auth();
+const storage = firebase.storage();
 db.enablePersistence({ synchronizeTabs: true }).catch(() => {});
 </script>
 
@@ -620,9 +622,47 @@ function StockBadge({qty,minQty}) {
 function ProductModal({product, onClose, onSave}) {
   const [form, setForm] = useState(product || {name:'',sku:'',category:'',unit:'',emoji:'📦',imageUrl:'',qty:0,minQty:10,reorderQty:20,costPrice:0,note:''});
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const fileInputRef = useRef();
   const set = (k,v) => setForm(f=>({...f,[k]:v}));
   const CATS = ['ใบตัด/ใบเจียร์','ลวดเชื่อม','อะไหล่เครื่องเชื่อม','ดอกเจาะ','น้ำมัน/สี','อุปกรณ์ความปลอดภัย','สิ้นเปลือง','อุปกรณ์ทั่วไป'];
   const EMOJIS = ['📦','⚙️','🔥','🔧','🔩','🦺','🛢️','🔨','⚡','🔌','🪛','🔑','🧰'];
+
+  const handleImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    // ย่อขนาดรูปก่อนอัปโหลด
+    const compressed = await compressImage(file, 800);
+    setUploading(true); setUploadProgress(0);
+    try {
+      const ref = storage.ref(`products/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g,'_')}`);
+      const task = ref.put(compressed);
+      task.on('state_changed',
+        snap => setUploadProgress(Math.round(snap.bytesTransferred/snap.totalBytes*100)),
+        err => { alert('อัปโหลดไม่สำเร็จ: '+err.message); setUploading(false); },
+        async () => { const url = await task.snapshot.ref.getDownloadURL(); set('imageUrl', url); setUploading(false); }
+      );
+    } catch(err) { alert('เกิดข้อผิดพลาด: '+err.message); setUploading(false); }
+  };
+
+  const compressImage = (file, maxPx) => new Promise(resolve => {
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let w = img.width, h = img.height;
+        if (w > maxPx || h > maxPx) { if(w>h){h=Math.round(h*maxPx/w);w=maxPx;}else{w=Math.round(w*maxPx/h);h=maxPx;} }
+        canvas.width=w; canvas.height=h;
+        canvas.getContext('2d').drawImage(img,0,0,w,h);
+        canvas.toBlob(blob=>resolve(blob),'image/jpeg',0.8);
+      };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+
   return <div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
     <div className="modal">
       <div className="modal-header">
@@ -644,7 +684,30 @@ function ProductModal({product, onClose, onSave}) {
             {EMOJIS.map(e=><button key={e} onClick={()=>set('emoji',e)} style={{fontSize:18,padding:'3px 5px',borderRadius:5,border:`2px solid ${form.emoji===e?'#3b82f6':'transparent'}`,background:form.emoji===e?'#eff6ff':'#f7fafc',cursor:'pointer'}}>{e}</button>)}
           </div>
         </div>
-        <div className="form-group"><label className="form-label">URL รูปภาพ</label><input className="form-control" value={form.imageUrl} onChange={e=>set('imageUrl',e.target.value)} placeholder="https://..."/></div>
+        {/* Image upload */}
+        <div className="form-group">
+          <label className="form-label">รูปภาพสินค้า</label>
+          <div style={{display:'flex',gap:8,alignItems:'flex-start'}}>
+            {/* Preview */}
+            <div style={{width:64,height:64,borderRadius:10,background:'#f0f4f8',display:'flex',alignItems:'center',justifyContent:'center',fontSize:28,flexShrink:0,overflow:'hidden',border:'1px solid #e2e8f0'}}>
+              {uploading
+                ? <div style={{fontSize:11,color:'#3b82f6',textAlign:'center'}}>{uploadProgress}%</div>
+                : form.imageUrl
+                  ? <img src={form.imageUrl} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}} onError={e=>{e.target.style.display='none';}}/>
+                  : form.emoji}
+            </div>
+            <div style={{flex:1}}>
+              <input ref={fileInputRef} type="file" accept="image/*" capture="environment" style={{display:'none'}} onChange={handleImageUpload}/>
+              <button type="button" className="btn btn-outline" style={{width:'100%',marginBottom:6}} onClick={()=>fileInputRef.current.click()} disabled={uploading}>
+                {uploading ? `⏳ กำลังอัปโหลด ${uploadProgress}%...` : '📷 ถ่ายรูป / เลือกจากคลัง'}
+              </button>
+              {uploading && <div style={{height:4,background:'#e2e8f0',borderRadius:2,overflow:'hidden'}}>
+                <div style={{height:'100%',width:uploadProgress+'%',background:'#3b82f6',transition:'width .3s'}}/>
+              </div>}
+              <input className="form-control" style={{marginTop:6,fontSize:11}} value={form.imageUrl} onChange={e=>set('imageUrl',e.target.value)} placeholder="หรือวาง URL รูปภาพตรงนี้"/>
+            </div>
+          </div>
+        </div>
         <div className="form-row">
           <div className="form-group"><label className="form-label">จำนวนปัจจุบัน</label><input type="number" min="0" className="form-control" value={form.qty} onChange={e=>set('qty',+e.target.value)}/></div>
           <div className="form-group"><label className="form-label">ราคาทุน (บาท)</label><input type="number" min="0" className="form-control" value={form.costPrice} onChange={e=>set('costPrice',+e.target.value)}/></div>
@@ -1024,7 +1087,7 @@ function App() {
     await db.collection('products').doc(id).set({...data, id, createdAt: firebase.firestore.FieldValue.serverTimestamp()});
   };
   const editProduct = async (data) => {
-    if (!isAdmin) return alert('เฉพาะ Admin เท่านั้น');
+    // ทุกคนแก้ไขสต็อกได้
     await db.collection('products').doc(data.id).update(data);
   };
   const deleteProduct = async (id) => {
